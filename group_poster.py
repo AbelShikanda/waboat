@@ -5,8 +5,10 @@ Handles all WhatsApp group posting functionality:
 - Loading products from JSON files
 - Opening groups
 - Posting messages with line breaks
-- Link preview waiting
+- Smart link preview waiting (detects when preview loads)
 - Product status management
+- Posts ONE product per run (configurable)
+- Tracks failed groups and auto-removes after 10 failures
 """
 
 import json
@@ -30,6 +32,7 @@ from target_groups import TARGET_GROUPS
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 PRODUCTS_DIR = DATA_DIR / "products"
+FAILED_GROUPS_FILE = DATA_DIR / "failed_groups.json"
 
 # Product files
 WA_PRODUCTS_FILE = PRODUCTS_DIR / "wa_products.json"
@@ -38,27 +41,153 @@ FACEBOOK_POSTS_FILE = PRODUCTS_DIR / "facebook_posts.json"
 
 # Create directories
 PRODUCTS_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # ============================================================
 # TIMING CONFIGURATION
 # ============================================================
 
 # Typing delays (milliseconds per character - SLOW & HUMAN)
-HUMAN_TYPING_DELAY_MIN = 100
-HUMAN_TYPING_DELAY_MAX = 250
+HUMAN_TYPING_DELAY_MIN = 30
+HUMAN_TYPING_DELAY_MAX = 60
 
 # Page interaction delays
-SEARCH_WAIT = 5
-OPEN_WAIT = 5
-FIND_COMPOSE_WAIT = 4
-AFTER_TYPING_WAIT = 5
-SEND_CONFIRM_WAIT = 6
-BETWEEN_GROUPS_WAIT = 6
-BETWEEN_PRODUCTS_WAIT = 8
-RETRY_DELAY = 5
+SEARCH_WAIT = 2
+OPEN_WAIT = 2
+FIND_COMPOSE_WAIT = 2
+AFTER_TYPING_WAIT = 2
+SEND_CONFIRM_WAIT = 2
+BETWEEN_GROUPS_WAIT = 2
+BETWEEN_PRODUCTS_WAIT = 2
+RETRY_DELAY = 3
 
-# Link preview delay (seconds)
-LINK_PREVIEW_DELAY = 15
+# Link preview delay (seconds) - Maximum wait time
+LINK_PREVIEW_DELAY = 7
+
+# Number of products to post per run (1 = post one product to all groups)
+POSTS_PER_RUN = 1
+
+# Group failure threshold (auto-remove after this many failures)
+MAX_GROUP_FAILURES = 10
+
+# ============================================================
+# FAILED GROUPS TRACKER
+# ============================================================
+
+class FailedGroupsTracker:
+    """Tracks groups that fail to open and auto-removes them"""
+    
+    def __init__(self, data_dir: Path = DATA_DIR):
+        self.data_dir = data_dir
+        self.failed_groups_file = data_dir / "failed_groups.json"
+        self.failed_groups = self._load_failed_groups()
+    
+    def _load_failed_groups(self) -> Dict[str, dict]:
+        """Load failed groups from JSON file"""
+        if self.failed_groups_file.exists():
+            try:
+                with open(self.failed_groups_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+    
+    def _save_failed_groups(self):
+        """Save failed groups to JSON file"""
+        with open(self.failed_groups_file, 'w', encoding='utf-8') as f:
+            json.dump(self.failed_groups, f, indent=2, ensure_ascii=False)
+    
+    def record_failure(self, group_name: str):
+        """Record a failure for a group"""
+        if group_name not in self.failed_groups:
+            self.failed_groups[group_name] = {
+                "failures": 0,
+                "first_failure": datetime.now().isoformat(),
+                "last_failure": datetime.now().isoformat(),
+                "status": "active"  # active, pending_removal, removed
+            }
+        
+        self.failed_groups[group_name]["failures"] += 1
+        self.failed_groups[group_name]["last_failure"] = datetime.now().isoformat()
+        
+        # Check if threshold is reached
+        if self.failed_groups[group_name]["failures"] >= MAX_GROUP_FAILURES:
+            self.failed_groups[group_name]["status"] = "pending_removal"
+            print(f"  ⚠️ Group '{group_name}' has failed {self.failed_groups[group_name]['failures']} times. Marked for removal.")
+        
+        self._save_failed_groups()
+    
+    def record_success(self, group_name: str):
+        """Record a success for a group (reset failures)"""
+        if group_name in self.failed_groups:
+            # Reset failure count on success
+            self.failed_groups[group_name]["failures"] = 0
+            self.failed_groups[group_name]["status"] = "active"
+            self.failed_groups[group_name]["last_success"] = datetime.now().isoformat()
+            self._save_failed_groups()
+    
+    def get_failed_groups(self, status: str = None) -> List[str]:
+        """Get groups with failures"""
+        if status:
+            return [name for name, data in self.failed_groups.items() if data.get("status") == status]
+        return list(self.failed_groups.keys())
+    
+    def get_groups_to_remove(self) -> List[str]:
+        """Get groups that have reached the failure threshold"""
+        return self.get_failed_groups("pending_removal")
+    
+    def remove_group(self, group_name: str) -> bool:
+        """Remove a group from the failed groups list (after deletion from target groups)"""
+        if group_name in self.failed_groups:
+            self.failed_groups[group_name]["status"] = "removed"
+            self.failed_groups[group_name]["removed_at"] = datetime.now().isoformat()
+            self._save_failed_groups()
+            return True
+        return False
+    
+    def is_group_failing(self, group_name: str) -> bool:
+        """Check if a group is currently failing"""
+        if group_name in self.failed_groups:
+            return self.failed_groups[group_name]["failures"] > 0
+        return False
+    
+    def get_failure_count(self, group_name: str) -> int:
+        """Get the failure count for a group"""
+        if group_name in self.failed_groups:
+            return self.failed_groups[group_name]["failures"]
+        return 0
+    
+    def get_summary(self) -> dict:
+        """Get a summary of failed groups"""
+        total = len(self.failed_groups)
+        pending_removal = len(self.get_groups_to_remove())
+        active = len([g for g in self.failed_groups.values() if g.get("status") == "active"])
+        removed = len([g for g in self.failed_groups.values() if g.get("status") == "removed"])
+        
+        return {
+            "total": total,
+            "active": active,
+            "pending_removal": pending_removal,
+            "removed": removed
+        }
+    
+    def print_summary(self):
+        """Print a summary of failed groups"""
+        summary = self.get_summary()
+        print("\n" + "=" * 60)
+        print("📊 FAILED GROUPS SUMMARY")
+        print("=" * 60)
+        print(f"Total tracked groups: {summary['total']}")
+        print(f"  ✅ Active (recovering): {summary['active']}")
+        print(f"  ⚠️ Pending removal: {summary['pending_removal']}")
+        print(f"  🗑️ Removed: {summary['removed']}")
+        
+        if summary['pending_removal'] > 0:
+            print("\n⚠️ Groups pending removal (will be removed from target list):")
+            for group in self.get_groups_to_remove():
+                failures = self.failed_groups[group]["failures"]
+                print(f"  - {group} ({failures} failures)")
+        print("=" * 60)
 
 # ============================================================
 # PRODUCT LOADER
@@ -296,7 +425,7 @@ class ProductLoader:
         return reset_success
     
     def get_product_message(self, product: dict) -> str:
-        """Create a marketing message from product data"""
+        """Create a marketing message from product data with creative templates"""
         name = product.get("product_name") or product.get("id") or "Product"
         description = product.get("description") or product.get("caption") or ""
         url = product.get("url") or ""
@@ -305,54 +434,165 @@ class ProductLoader:
         if not description:
             description = f"Check out this {source} post!"
         
+        # ============================================================
+        # CREATIVE TEMPLATES (Compact - No extra spaces)
+        # ============================================================
+        
         templates = [
+            # Template 1: Luxurious & Premium
             f"""
-🛍️ *NEW CONTENT* 🛍️
-
-✨ *{name}* ✨
-
-📝 {description}
-
-🔗 {url}
-
-Check it out! 🏃‍♂️
-
-📲 DM for inquiries
-
-#KenyaDeals #{name.replace(' ', '')} #Tulia
-""",
+    ✨ *LUXURY MEETS STYLE* ✨
+    🌟 Introducing *{name}*
+    {description}
+    🔗 View here: {url}
+    Experience the difference. Limited stock available!
+    📲 DM to order | 💬 Inbox for inquiries
+    #KenyaLuxury #{name.replace(' ', '')} #PremiumStyle #Tulia""",
+            
+            # Template 2: Urgent & Limited Edition
             f"""
-🔥 *HOT CONTENT* 🔥
-
-✨ *{name}* ✨
-
-{description}
-
-🔗 {url}
-
-Don't miss out! 🏃
-
-💬 Inbox for inquiries
-
-#Kenya #{name.replace(' ', '')} #Nunua
-""",
+    🚨 *LIMITED EDITION ALERT* 🚨
+    🔥 *{name}* - Only a few left!
+    {description}
+    🛒 Grab yours now: {url}
+    Don't miss out on this exclusive drop! ⏳
+    📲 Order via DM | 💬 Send a message
+    #LimitedEdition #{name.replace(' ', '')} #KenyanBusiness #Tulia""",
+            
+            # Template 3: Lifestyle & Inspirational
             f"""
-🎯 *CHECK THIS OUT* 🎯
-
-*{name}*
-
-{description}
-
-📎 {url}
-
-Limited time! 😊
-
-📲 DM for inquiries
-
-#KenyanBusiness #{name.replace(' ', '')} #MarketPlace
-"""
+    🌟 *ELEVATE YOUR STYLE* 🌟
+    💎 *{name}*
+    {description}
+    👀 See more: {url}
+    Because you deserve the best. 💫
+    📲 DM to inquire | 💬 Chat with us
+    #KenyaStyle #{name.replace(' ', '')} #Lifestyle #Tulia""",
+            
+            # Template 4: Flash Sale / Special Offer
+            f"""
+    ⚡ *FLASH SALE* ⚡
+    🎯 *{name}*
+    {description}
+    🔗 Check it out: {url}
+    Hurry! This won't last long! 🏃‍♂️💨
+    📲 DM now | 💬 Inbox for details
+    #FlashSale #{name.replace(' ', '')} #Kenya #Tulia""",
+            
+            # Template 5: Friendly & Personal
+            f"""
+    👋 *HEY, CHECK THIS OUT!*
+    🎁 *{name}*
+    📝 {description}
+    🔗 Link: {url}
+    Let us know what you think! 😊
+    📲 DM for orders | 💬 Send a message
+    #KenyaDeals #{name.replace(' ', '')} #Tulia""",
+            
+            # Template 6: Bold & Statement
+            f"""
+    🔥 *BOLD STATEMENT* 🔥
+    💪 *{name}*
+    📌 {description}
+    🔗 {url}
+    Make your mark. Stand out. 🌟
+    📲 DM inquiries | 💬 Inbox for orders
+    #BoldStyle #{name.replace(' ', '')} #KenyaBusiness #Tulia""",
+            
+            # Template 7: Minimalist & Clean
+            f"""
+    ✦ *NEW ARRIVAL* ✦
+    *{name}*
+    {description}
+    🔗 {url}
+    Quality you can trust. 💎
+    📲 DM for inquiries | 💬 Send a message
+    #KenyaDeals #{name.replace(' ', '')} #Tulia""",
+            
+            # Template 8: Interactive / Question-Based
+            f"""
+    🤔 *WHAT DO YOU THINK?*
+    👀 *{name}*
+    {description}
+    🔗 {url}
+    Would you rock this? Let us know! 🗣️
+    📲 DM to order | 💬 Inbox for inquiries
+    #KenyaFashion #{name.replace(' ', '')} #Tulia""",
+            
+            # Template 9: Storytelling / Descriptive
+            f"""
+    📖 *THE STORY BEHIND THE STYLE*
+    ✨ *{name}*
+    📝 {description}
+    🔗 Discover more: {url}
+    Every piece tells a story. Yours starts here. 🌟
+    📲 DM for orders | 💬 Send a message
+    #StoryStyle #{name.replace(' ', '')} #Kenya #Tulia""",
+            
+            # Template 10: Short & Punchy
+            f"""
+    💥 *YOUR NEW FAVORITE* 💥
+    *{name}*
+    {description}
+    🔗 {url}
+    Don't sleep on this one! 😎
+    📲 DM to order | 💬 Inbox
+    #KenyaDeals #{name.replace(' ', '')} #Tulia""",
+            
+            # Template 11: Social Proof / FOMO
+            f"""
+    🔥 *GOING FAST!* 🔥
+    ⭐ *{name}*
+    {description}
+    🔗 {url}
+    Join the hype! Everyone's talking about this. 🗣️
+    📲 DM now | 💬 Send a message
+    #ViralStyle #{name.replace(' ', '')} #Kenya #Tulia""",
+            
+            # Template 12: Gift / Occasion-Based
+            f"""
+    🎁 *PERFECT GIFT IDEA* 🎁
+    🎀 *{name}*
+    {description}
+    🔗 {url}
+    Looking for the perfect gift? Look no further! 🎉
+    📲 DM to order | 💬 Inbox for inquiries
+    #GiftIdeas #{name.replace(' ', '')} #Kenya #Tulia""",
+            
+            # Template 13: Quality-Focused
+            f"""
+    🏆 *PREMIUM QUALITY* 🏆
+    ✨ *{name}*
+    📌 {description}
+    🔗 {url}
+    Quality you can see and feel. 💎
+    📲 DM for orders | 💬 Chat with us
+    #KenyaQuality #{name.replace(' ', '')} #Tulia""",
+            
+            # Template 14: Two Options (Choice)
+            f"""
+    🎯 *WHICH ONE DO YOU PREFER?* 🎯
+    *{name}*
+    📝 {description}
+    🔗 {url}
+    Option A: Buy now 🛒
+    Option B: Inquire first 💬
+    Make your choice! 👇
+    📲 DM to order | 💬 Inbox for inquiries
+    #ChooseYourStyle #{name.replace(' ', '')} #Kenya #Tulia""",
+            
+            # Template 15: Community / Family Vibe
+            f"""
+    🤝 *BUILT FOR THE COMMUNITY* 🤝
+    🌟 *{name}*
+    {description}
+    🔗 {url}
+    Designed with you in mind. ❤️
+    📲 DM for orders | 💬 Send a message
+    #KenyaCommunity #{name.replace(' ', '')} #Tulia""",
         ]
         
+        # Return a random template
         return random.choice(templates)
     
     def has_url(self, message: str) -> bool:
@@ -378,14 +618,21 @@ class GroupPoster:
         self.page = page
         self.context = context
         self.product_loader = ProductLoader()
+        self.failed_tracker = FailedGroupsTracker()
         self.is_running = False
     
     # ============================================================
-    # GROUP OPENING
+    # GROUP OPENING (with failure tracking)
     # ============================================================
     
     async def open_group(self, group_name: str) -> bool:
+        """Open a group with failure tracking"""
         print(f"  🔍 Opening: {group_name}")
+        
+        # Check if group is already marked for removal
+        if group_name in self.failed_tracker.get_groups_to_remove():
+            print(f"  ⚠️ Group '{group_name}' is marked for removal. Skipping.")
+            return False
         
         for attempt in range(3):
             try:
@@ -435,7 +682,7 @@ class GroupPoster:
                             await asyncio.sleep(0.5)
                             
                             for char in group_name:
-                                await search_input.type(char, delay=random.randint(80, 150))
+                                await search_input.type(char, delay=random.randint(HUMAN_TYPING_DELAY_MIN, HUMAN_TYPING_DELAY_MAX))
                             await asyncio.sleep(SEARCH_WAIT + random.uniform(0, 2))
                             typed = True
                             print(f"    ✅ Typed: {group_name}")
@@ -444,7 +691,7 @@ class GroupPoster:
                         continue
                 
                 if not typed:
-                    await self.page.keyboard.type(group_name, delay=100)
+                    await self.page.keyboard.type(group_name, delay=random.randint(HUMAN_TYPING_DELAY_MIN, HUMAN_TYPING_DELAY_MAX))
                     await asyncio.sleep(SEARCH_WAIT + random.uniform(0, 2))
                     print(f"    ✅ Typed via keyboard")
                 
@@ -485,6 +732,7 @@ class GroupPoster:
                 
                 if not group_found:
                     print(f"    ❌ Group not found in results")
+                    self.failed_tracker.record_failure(group_name)
                     if attempt < 2:
                         print(f"    🔄 Retrying in {RETRY_DELAY}-{RETRY_DELAY+3}s...")
                         await asyncio.sleep(RETRY_DELAY + random.uniform(0, 3))
@@ -517,9 +765,11 @@ class GroupPoster:
                 
                 if compose_found:
                     print(f"    ✅ Group opened successfully!")
+                    self.failed_tracker.record_success(group_name)
                     return True
                 else:
                     print(f"    ❌ Compose box not found")
+                    self.failed_tracker.record_failure(group_name)
                     if attempt < 2:
                         print(f"    🔄 Retrying in {RETRY_DELAY}-{RETRY_DELAY+3}s...")
                         await asyncio.sleep(RETRY_DELAY + random.uniform(0, 3))
@@ -529,6 +779,7 @@ class GroupPoster:
                 
             except Exception as e:
                 print(f"    ❌ Error: {e}")
+                self.failed_tracker.record_failure(group_name)
                 if attempt < 2:
                     print(f"    🔄 Retrying in {RETRY_DELAY}-{RETRY_DELAY+3}s...")
                     await asyncio.sleep(RETRY_DELAY + random.uniform(0, 3))
@@ -537,14 +788,14 @@ class GroupPoster:
         return False
     
     # ============================================================
-    # POST TO GROUP
+    # POST TO GROUP (SMART LINK PREVIEW DETECTION)
     # ============================================================
     
     async def post_to_group(self, group_name: str, message: str) -> bool:
         """
         Post a message to a group
         - Types with line breaks preserved
-        - Waits for link preview to load BEFORE sending
+        - Smart link preview waiting (detects when preview loads)
         """
         print(f"\n📤 Posting to: {group_name}")
         
@@ -584,6 +835,7 @@ class GroupPoster:
             
             if not compose:
                 print(f"  ❌ Compose box not found")
+                self.failed_tracker.record_failure(group_name)
                 return False
             
             print(f"  [7/9] Typing message with formatting...")
@@ -607,43 +859,70 @@ class GroupPoster:
             
             print(f"    ✅ Message typed with {len(lines)} lines")
             
+            # ============================================================
+            # SMART LINK PREVIEW DETECTION
+            # ============================================================
             if self.product_loader.has_url(message):
                 print(f"  [7.5/9] ⏳ Waiting for link preview to load...")
-                print(f"    ⏳ WhatsApp needs ~15 seconds to generate the preview")
+                print(f"    ⏳ WhatsApp needs up to {LINK_PREVIEW_DELAY}s to generate the preview")
                 
-                preview_found = False
-                preview_selectors = [
-                    'div[data-testid="link-preview"]',
-                    'div[data-testid="link"]',
-                    'div[aria-label="Link preview"]',
-                    'div.link-preview',
-                    'div[class*="link"]'
-                ]
+                preview_loaded = False
+                url_selector = 'div[data-testid="message-text"]'
                 
                 for attempt in range(LINK_PREVIEW_DELAY):
                     await asyncio.sleep(1)
                     
-                    for selector in preview_selectors:
-                        try:
-                            preview = await self.page.query_selector(selector)
-                            if preview:
-                                is_visible = await preview.is_visible()
-                                if is_visible:
-                                    preview_found = True
-                                    print(f"    ✅ Link preview loaded! (took {attempt+1}s)")
+                    try:
+                        # Check if URL is still visible as plain text
+                        message_text = await self.page.evaluate(f'''
+                            (selector) => {{
+                                const el = document.querySelector(selector);
+                                return el ? el.textContent : '';
+                            }}
+                        ''', url_selector)
+                        
+                        # If URL is no longer in the message text, preview has replaced it
+                        if message_text and not self.product_loader.has_url(message_text):
+                            preview_loaded = True
+                            print(f"    ✅ Link preview loaded! (took {attempt+1}s)")
+                            break
+                        
+                        # Also check for preview elements
+                        preview_selectors = [
+                            'div[data-testid="link-preview"]',
+                            'div[data-testid="link"]',
+                            'div[aria-label="Link preview"]',
+                            'div.link-preview-container',
+                            'div[data-testid="message-link"]',
+                            'div[data-testid="image-container"]'
+                        ]
+                        
+                        for selector in preview_selectors:
+                            try:
+                                preview = await self.page.query_selector(selector)
+                                if preview and await preview.is_visible():
+                                    preview_loaded = True
+                                    print(f"    ✅ Link preview loaded! (found: {selector})")
                                     break
-                        except:
-                            continue
+                            except:
+                                continue
+                        
+                        if preview_loaded:
+                            break
+                        
+                    except Exception as e:
+                        # If we can't check, continue waiting
+                        pass
                     
-                    if preview_found:
-                        break
-                    
-                    if attempt % 5 == 0 and attempt > 0:
+                    # Show progress every 5 seconds
+                    if (attempt + 1) % 5 == 0:
                         print(f"    ⏳ Still loading... ({attempt+1}/{LINK_PREVIEW_DELAY}s)")
                 
-                if not preview_found:
+                # If preview didn't load, wait a bit longer
+                if not preview_loaded:
                     print(f"    ⚠️ Link preview didn't appear, waiting extra 5s...")
                     await asyncio.sleep(5)
+                    print(f"    ✅ Proceeding with send")
             else:
                 print(f"  [7.5/9] ⏳ No link detected, proceeding...")
             
@@ -695,17 +974,53 @@ class GroupPoster:
             
         except Exception as e:
             print(f"  ❌ Error posting: {e}")
+            self.failed_tracker.record_failure(group_name)
             return False
+    
+    # ============================================================
+    # FILTER GROUPS (remove failed ones)
+    # ============================================================
+    
+    def filter_groups(self, groups: List[str]) -> List[str]:
+        """Filter out groups that are marked for removal"""
+        groups_to_remove = self.failed_tracker.get_groups_to_remove()
+        
+        if groups_to_remove:
+            print(f"\n⚠️ Removing {len(groups_to_remove)} failed groups from target list:")
+            for group in groups_to_remove:
+                failures = self.failed_tracker.failed_groups[group]["failures"]
+                print(f"  - {group} ({failures} failures)")
+                self.failed_tracker.remove_group(group)
+            
+            print(f"\n✅ Removed {len(groups_to_remove)} groups. They will be skipped in future runs.")
+        
+        # Return groups that are not in removal list
+        return [g for g in groups if g not in groups_to_remove]
     
     # ============================================================
     # POST RANDOM PRODUCTS
     # ============================================================
     
     async def post_random_products(self, count: int = None, groups: List[str] = None):
-        """Post random products from the pool"""
+        """
+        Post random products - DEFAULT: Posts ONE product to ALL groups and stops
+        
+        Args:
+            count: Number of products to post. Default is 1 (POSTS_PER_RUN)
+            groups: List of groups to post to. Default is TARGET_GROUPS
+        """
         if groups is None:
             groups = TARGET_GROUPS
         
+        # Filter out failed groups
+        groups = self.filter_groups(groups)
+        
+        if not groups:
+            print("\n❌ No groups available to post to!")
+            self.failed_tracker.print_summary()
+            return
+        
+        # Load all pending products
         products = self.product_loader.load_all_products(status="pending")
         
         if not products:
@@ -722,32 +1037,46 @@ class GroupPoster:
         pending_count = len(pending_products)
         
         print(f"\n📦 Total pending products: {pending_count}")
+        print(f"📱 Active groups: {len(groups)}")
         
-        if count is None or count > pending_count:
+        # Check for groups pending removal
+        pending_removal = self.failed_tracker.get_groups_to_remove()
+        if pending_removal:
+            print(f"⚠️ {len(pending_removal)} groups are pending removal (will be removed after this run)")
+        
+        # Default: Post ONE product
+        if count is None:
+            count = POSTS_PER_RUN
+        
+        if count > pending_count:
+            print(f"⚠️ Requested {count} products but only {pending_count} pending. Posting {pending_count}.")
             count = pending_count
         
-        print(f"📢 Will post {count} random products")
-        
+        # Select random product(s)
         selected = random.sample(pending_products, count)
         
-        print(f"📋 Selected products:")
+        print(f"\n📢 Will post {count} product(s) to {len(groups)} groups")
+        print(f"📋 Selected product(s):")
         for i, p in enumerate(selected, 1):
             source = p.get("source", "unknown")
             name = p.get("product_name") or p.get("id", "Unknown")
-            print(f"  {i}. [{source}] {name}")
+            has_link = "🔗" if p.get("url") else "📝"
+            print(f"  {i}. {has_link} [{source}] {name}")
         
         print(f"\n▶️ Posting to {len(groups)} groups...")
         print("=" * 60)
         
-        successful = 0
-        failed = 0
+        successful_products = 0
+        failed_products = 0
         
         for i, product in enumerate(selected, 1):
             product_name = product.get("product_name") or product.get("id", "Product")
             source = product.get("source", "unknown")
+            has_link = bool(product.get("url"))
             
             print(f"\n{'='*60}")
             print(f"📦 [{i}/{len(selected)}] {source.upper()}: {product_name}")
+            print(f"   Link: {'Yes' if has_link else 'No'}")
             print(f"{'='*60}")
             
             message = self.product_loader.get_product_message(product)
@@ -769,33 +1098,43 @@ class GroupPoster:
                     print(f"⏳ Waiting {BETWEEN_GROUPS_WAIT}s before next group...")
                     await asyncio.sleep(BETWEEN_GROUPS_WAIT + random.uniform(0, 2))
             
+            # Mark product as posted if at least one group succeeded
             if successful_groups:
                 self.product_loader.mark_as_posted(product)
-                successful += 1
+                successful_products += 1
                 print(f"\n✅ Product '{product_name}' posted to {len(successful_groups)} groups")
             else:
-                failed += 1
+                failed_products += 1
                 print(f"\n❌ Product '{product_name}' failed to post")
             
             if failed_groups:
                 print(f"⚠️ Failed groups: {failed_groups}")
             
-            if i < len(selected):
+            # Only wait between products if posting more than 1
+            if i < len(selected) and len(selected) > 1:
                 print(f"\n⏳ Waiting {BETWEEN_PRODUCTS_WAIT}s before next product...")
                 await asyncio.sleep(BETWEEN_PRODUCTS_WAIT + random.uniform(0, 2))
         
+        # Summary
         stats = self.product_loader.get_stats()
         print("\n" + "=" * 60)
         print("📊 POSTING SUMMARY")
         print("=" * 60)
-        print(f"✅ Successful: {successful}")
-        print(f"❌ Failed: {failed}")
+        print(f"✅ Successful products: {successful_products}")
+        print(f"❌ Failed products: {failed_products}")
         print(f"📱 Groups used: {len(groups)}")
         print(f"📦 Pending remaining: {stats['pending']}")
+        print(f"⏳ Link preview max delay: {LINK_PREVIEW_DELAY}s")
         print("=" * 60)
         
+        # Print failed groups summary
+        self.failed_tracker.print_summary()
+        
+        # Auto-reset when all products are posted
         if stats['pending'] == 0:
             print("\n🎉 All products are posted!")
             print("🔄 Auto-resetting all products to pending for fresh start...")
             self.product_loader.reset_all_products()
             print("✅ Products reset! Ready for next round.")
+        
+        print(f"\n✅ Posting complete! {successful_products} product(s) posted.")

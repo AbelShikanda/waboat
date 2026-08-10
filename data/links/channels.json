@@ -1,3 +1,19 @@
 {
-  "channels": []
+  "channels": [
+    {
+      "name": "WhatsApp Channel",
+      "platform": "whatsapp",
+      "url": "https://whatsapp.com/channel/0029Va6hxPK4tRro4abTSA3b",
+      "status": "pending",
+      "scheduled_date": "2025-05-09",
+      "scheduled_time": "20:44:23",
+      "posted_date": null,
+      "posted_time": null,
+      "description": "Stay in the loop! Join my whatsapp channel for exclusive updates, offers, and insights."
+    }
+  ],
+  "total_channels": 1,
+  "total_pending": 1,
+  "total_posted": 0,
+  "last_updated": "2025-01-15T12:00:00"
 }

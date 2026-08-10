@@ -366,11 +366,11 @@
     {
       "id": "Cgze_Zro8ul",
       "url": "https://www.instagram.com/p/Cgze_Zro8ul/",
-      "status": "pending",
+      "status": "posted",
       "scheduled_date": "2025-05-30",
       "scheduled_time": "06:07:46",
-      "posted_date": null,
-      "posted_time": null,
+      "posted_date": "2026-08-10",
+      "posted_time": "12:08:24",
       "caption": "",
       "media_type": "image"
     },
@@ -697,5 +697,6 @@
   "total_reels": 63,
   "total_pending": 60,
   "total_posted": 3,
-  "last_updated": "2025-01-15T12:00:00"
+  "last_updated": "2025-01-15T12:00:00",
+  "posts": []
 }
