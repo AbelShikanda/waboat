@@ -1,0 +1,20 @@
+{
+  "queue": {
+    "pending": [
+      {
+        "product_id": "test_20260809_204901",
+        "type": "website",
+        "groups_to_post": [
+          "PRINT SHOP KENYA",
+          "CARS AND TRUCKS"
+        ],
+        "priority": 1,
+        "added_to_queue": "2026-08-09T20:49:02.462557",
+        "attempts": 0,
+        "max_attempts": 3
+      }
+    ],
+    "in_progress": [],
+    "failed": []
+  }
+}

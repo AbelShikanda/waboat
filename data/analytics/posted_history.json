@@ -1,0 +1,46 @@
+{
+  "history": [
+    {
+      "product_id": "test_20260809_182117",
+      "posted_at": "2026-08-09T18:23:22.116228",
+      "groups_posted": [],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_183900",
+      "posted_at": "2026-08-09T18:42:35.697554",
+      "groups_posted": [],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_190211",
+      "posted_at": "2026-08-09T19:03:40.735222",
+      "groups_posted": [],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_190215",
+      "posted_at": "2026-08-09T19:58:42.295009",
+      "groups_posted": [],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_195604",
+      "posted_at": "2026-08-09T20:53:51.195330",
+      "groups_posted": [],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_204858",
+      "posted_at": "2026-08-09T21:28:49.081576",
+      "groups_posted": [],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_204859",
+      "posted_at": "2026-08-09T21:33:29.421158",
+      "groups_posted": [],
+      "status": "success"
+    }
+  ]
+}

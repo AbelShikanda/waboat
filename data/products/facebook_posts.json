@@ -1,0 +1,30 @@
+{
+  "posts": [
+    {
+      "id": "1037836467527845",
+      "url": "https://www.facebook.com/photo.php?fbid=1037836467527845&set=pb.100039045048976.-2207520000&type=3",
+      "status": "pending",
+      "scheduled_date": "2025-06-03",
+      "scheduled_time": "21:49:42",
+      "posted_date": null,
+      "posted_time": null,
+      "caption": "",
+      "media_type": "image"
+    },
+    {
+      "id": "136487164329451",
+      "url": "https://www.facebook.com/photo.php?fbid=136487164329451&set=pb.100039045048976.-2207520000&type=3",
+      "status": "pending",
+      "scheduled_date": "2025-07-01",
+      "scheduled_time": "19:48:35",
+      "posted_date": null,
+      "posted_time": null,
+      "caption": "",
+      "media_type": "image"
+    }
+  ],
+  "total_posts": 2,
+  "total_pending": 2,
+  "total_posted": 0,
+  "last_updated": "2025-01-15T12:00:00"
+}

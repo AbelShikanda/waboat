@@ -1,0 +1,22 @@
+{
+  "history": [
+    {
+      "product_id": "test_20260809_213545",
+      "posted_at": "2026-08-09T21:39:14.013984",
+      "groups_posted": [
+        "PRINT SHOP KENYA",
+        "CARS AND TRUCKS"
+      ],
+      "status": "success"
+    },
+    {
+      "product_id": "test_20260809_213547",
+      "posted_at": "2026-08-09T21:42:00.259771",
+      "groups_posted": [
+        "PRINT SHOP KENYA",
+        "CARS AND TRUCKS"
+      ],
+      "status": "success"
+    }
+  ]
+}

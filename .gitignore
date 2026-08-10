@@ -427,3 +427,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# personal files
+notes/*
+notes/
+whatsapp_session/
