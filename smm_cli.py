@@ -5,7 +5,8 @@ Command line interface for managing products and groups
 """
 
 import sys
-from group_poster import ProductLoader, TARGET_GROUPS
+from group_poster import ProductLoader
+from target_groups import TARGET_GROUPS
 
 class SMM_CLI:
     def __init__(self):
@@ -23,13 +24,14 @@ Commands:
   help              - Show this help
 
 Examples:
-  python smm_cli.py list
-  python smm_cli.py stats
-  python smm_cli.py reset
-  python smm_cli.py groups
+  python whatsapp_bot.py cli list
+  python whatsapp_bot.py cli stats
+  python whatsapp_bot.py cli reset
+  python whatsapp_bot.py cli groups
 """)
     
     def list_pending(self):
+        """List all pending products"""
         products = self.product_loader.load_all_products(status="pending")
         if not products:
             print("\n📭 No pending products")
@@ -46,6 +48,7 @@ Examples:
         print("=" * 60)
     
     def show_stats(self):
+        """Show product statistics by status and source"""
         products = self.product_loader.load_all_products(status=None)
         
         print("\n📊 PRODUCT STATISTICS")
@@ -69,13 +72,17 @@ Examples:
         for src, count in sources.items():
             print(f"  - {src}: {count}")
         
+        total = len(products)
+        print(f"\n📦 Total Products: {total}")
         print("=" * 60)
     
     def reset_products(self):
+        """Reset all products to pending"""
         loader = ProductLoader()
         loader.reset_all_products()
     
     def list_groups(self):
+        """List all target groups"""
         print(f"\n📢 GROUPS ({len(TARGET_GROUPS)} total)")
         print("=" * 50)
         for i, group in enumerate(TARGET_GROUPS, 1):

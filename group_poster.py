@@ -48,27 +48,27 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # ============================================================
 
 # Typing delays (milliseconds per character - SLOW & HUMAN)
-HUMAN_TYPING_DELAY_MIN = 30
-HUMAN_TYPING_DELAY_MAX = 60
+HUMAN_TYPING_DELAY_MIN = 20
+HUMAN_TYPING_DELAY_MAX = 40
 
 # Page interaction delays
-SEARCH_WAIT = 2
-OPEN_WAIT = 2
-FIND_COMPOSE_WAIT = 2
-AFTER_TYPING_WAIT = 2
-SEND_CONFIRM_WAIT = 2
-BETWEEN_GROUPS_WAIT = 2
-BETWEEN_PRODUCTS_WAIT = 2
-RETRY_DELAY = 3
+SEARCH_WAIT = 1
+OPEN_WAIT = 1
+FIND_COMPOSE_WAIT = 1
+AFTER_TYPING_WAIT = 1
+SEND_CONFIRM_WAIT = 1
+BETWEEN_GROUPS_WAIT = 1
+BETWEEN_PRODUCTS_WAIT = 1
+RETRY_DELAY = 2
 
 # Link preview delay (seconds) - Maximum wait time
-LINK_PREVIEW_DELAY = 7
+LINK_PREVIEW_DELAY = 5
 
 # Number of products to post per run (1 = post one product to all groups)
 POSTS_PER_RUN = 1
 
 # Group failure threshold (auto-remove after this many failures)
-MAX_GROUP_FAILURES = 10
+MAX_GROUP_FAILURES = 100
 
 # ============================================================
 # FAILED GROUPS TRACKER
@@ -424,8 +424,10 @@ class ProductLoader:
         
         return reset_success
     
-    def get_product_message(self, product: dict) -> str:
-        """Create a marketing message from product data with creative templates"""
+    import random
+
+    def get_product_message(self, product: dict, contact_name: str = "") -> str:
+        """Create a marketing message with optional personalization"""
         name = product.get("product_name") or product.get("id") or "Product"
         description = product.get("description") or product.get("caption") or ""
         url = product.get("url") or ""
@@ -434,166 +436,56 @@ class ProductLoader:
         if not description:
             description = f"Check out this {source} post!"
         
-        # ============================================================
-        # CREATIVE TEMPLATES (Compact - No extra spaces)
-        # ============================================================
-        
-        templates = [
-            # Template 1: Luxurious & Premium
-            f"""
-    ✨ *LUXURY MEETS STYLE* ✨
-    🌟 Introducing *{name}*
-    {description}
-    🔗 View here: {url}
-    Experience the difference. Limited stock available!
-    📲 DM to order | 💬 Inbox for inquiries
-    #KenyaLuxury #{name.replace(' ', '')} #PremiumStyle #Tulia""",
-            
-            # Template 2: Urgent & Limited Edition
-            f"""
-    🚨 *LIMITED EDITION ALERT* 🚨
-    🔥 *{name}* - Only a few left!
-    {description}
-    🛒 Grab yours now: {url}
-    Don't miss out on this exclusive drop! ⏳
-    📲 Order via DM | 💬 Send a message
-    #LimitedEdition #{name.replace(' ', '')} #KenyanBusiness #Tulia""",
-            
-            # Template 3: Lifestyle & Inspirational
-            f"""
-    🌟 *ELEVATE YOUR STYLE* 🌟
-    💎 *{name}*
-    {description}
-    👀 See more: {url}
-    Because you deserve the best. 💫
-    📲 DM to inquire | 💬 Chat with us
-    #KenyaStyle #{name.replace(' ', '')} #Lifestyle #Tulia""",
-            
-            # Template 4: Flash Sale / Special Offer
-            f"""
-    ⚡ *FLASH SALE* ⚡
-    🎯 *{name}*
-    {description}
-    🔗 Check it out: {url}
-    Hurry! This won't last long! 🏃‍♂️💨
-    📲 DM now | 💬 Inbox for details
-    #FlashSale #{name.replace(' ', '')} #Kenya #Tulia""",
-            
-            # Template 5: Friendly & Personal
-            f"""
-    👋 *HEY, CHECK THIS OUT!*
-    🎁 *{name}*
-    📝 {description}
-    🔗 Link: {url}
-    Let us know what you think! 😊
-    📲 DM for orders | 💬 Send a message
-    #KenyaDeals #{name.replace(' ', '')} #Tulia""",
-            
-            # Template 6: Bold & Statement
-            f"""
-    🔥 *BOLD STATEMENT* 🔥
-    💪 *{name}*
-    📌 {description}
-    🔗 {url}
-    Make your mark. Stand out. 🌟
-    📲 DM inquiries | 💬 Inbox for orders
-    #BoldStyle #{name.replace(' ', '')} #KenyaBusiness #Tulia""",
-            
-            # Template 7: Minimalist & Clean
-            f"""
-    ✦ *NEW ARRIVAL* ✦
-    *{name}*
-    {description}
-    🔗 {url}
-    Quality you can trust. 💎
-    📲 DM for inquiries | 💬 Send a message
-    #KenyaDeals #{name.replace(' ', '')} #Tulia""",
-            
-            # Template 8: Interactive / Question-Based
-            f"""
-    🤔 *WHAT DO YOU THINK?*
-    👀 *{name}*
-    {description}
-    🔗 {url}
-    Would you rock this? Let us know! 🗣️
-    📲 DM to order | 💬 Inbox for inquiries
-    #KenyaFashion #{name.replace(' ', '')} #Tulia""",
-            
-            # Template 9: Storytelling / Descriptive
-            f"""
-    📖 *THE STORY BEHIND THE STYLE*
-    ✨ *{name}*
-    📝 {description}
-    🔗 Discover more: {url}
-    Every piece tells a story. Yours starts here. 🌟
-    📲 DM for orders | 💬 Send a message
-    #StoryStyle #{name.replace(' ', '')} #Kenya #Tulia""",
-            
-            # Template 10: Short & Punchy
-            f"""
-    💥 *YOUR NEW FAVORITE* 💥
-    *{name}*
-    {description}
-    🔗 {url}
-    Don't sleep on this one! 😎
-    📲 DM to order | 💬 Inbox
-    #KenyaDeals #{name.replace(' ', '')} #Tulia""",
-            
-            # Template 11: Social Proof / FOMO
-            f"""
-    🔥 *GOING FAST!* 🔥
-    ⭐ *{name}*
-    {description}
-    🔗 {url}
-    Join the hype! Everyone's talking about this. 🗣️
-    📲 DM now | 💬 Send a message
-    #ViralStyle #{name.replace(' ', '')} #Kenya #Tulia""",
-            
-            # Template 12: Gift / Occasion-Based
-            f"""
-    🎁 *PERFECT GIFT IDEA* 🎁
-    🎀 *{name}*
-    {description}
-    🔗 {url}
-    Looking for the perfect gift? Look no further! 🎉
-    📲 DM to order | 💬 Inbox for inquiries
-    #GiftIdeas #{name.replace(' ', '')} #Kenya #Tulia""",
-            
-            # Template 13: Quality-Focused
-            f"""
-    🏆 *PREMIUM QUALITY* 🏆
-    ✨ *{name}*
-    📌 {description}
-    🔗 {url}
-    Quality you can see and feel. 💎
-    📲 DM for orders | 💬 Chat with us
-    #KenyaQuality #{name.replace(' ', '')} #Tulia""",
-            
-            # Template 14: Two Options (Choice)
-            f"""
-    🎯 *WHICH ONE DO YOU PREFER?* 🎯
-    *{name}*
-    📝 {description}
-    🔗 {url}
-    Option A: Buy now 🛒
-    Option B: Inquire first 💬
-    Make your choice! 👇
-    📲 DM to order | 💬 Inbox for inquiries
-    #ChooseYourStyle #{name.replace(' ', '')} #Kenya #Tulia""",
-            
-            # Template 15: Community / Family Vibe
-            f"""
-    🤝 *BUILT FOR THE COMMUNITY* 🤝
-    🌟 *{name}*
-    {description}
-    🔗 {url}
-    Designed with you in mind. ❤️
-    📲 DM for orders | 💬 Send a message
-    #KenyaCommunity #{name.replace(' ', '')} #Tulia""",
+        # Variety pools
+        call_to_actions = [
+            "DM to order | Inbox for inquiries",
+            "Order via DM | Chat with us",
+            "Send a message to order",
+            "DM for pricing and availability",
+            "Inbox us to secure yours",
+            "Order now - limited stock available"
         ]
         
-        # Return a random template
-        return random.choice(templates)
+        promos = [
+            "Quality you can trust.",
+            "Don't miss out on this one!",
+            "Perfect for any occasion.",
+            "Designed with you in mind.",
+            "Stand out from the crowd.",
+            "Experience the difference."
+        ]
+        
+        headers = [
+            "[ PREMIUM SELECTION ]",
+            "[ LIMITED EDITION ]",
+            "[ LIFESTYLE PICK ]",
+            "[ FLASH SALE ]",
+            "[ NEW ARRIVAL ]",
+            "[ BOLD STATEMENT ]"
+        ]
+        
+        header = random.choice(headers)
+        cta = random.choice(call_to_actions)
+        promo = random.choice(promos)
+        
+        # Clean hashtag: remove special chars and spaces
+        hashtag_name = ''.join(c for c in name if c.isalnum())
+        
+        # Build message with conditional greeting
+        parts = []
+        if contact_name:
+            parts.append(f"Hi {contact_name}!")
+        parts.extend([
+            header,
+            f"Product: {name}",
+            description,
+            f"Link: {url}",
+            promo,
+            cta,
+            f"#{hashtag_name} #Kenya #Tulia"
+        ])
+        
+        return "\n".join(parts)
     
     def has_url(self, message: str) -> bool:
         return "http" in message or "www." in message
@@ -920,8 +812,8 @@ class GroupPoster:
                 
                 # If preview didn't load, wait a bit longer
                 if not preview_loaded:
-                    print(f"    ⚠️ Link preview didn't appear, waiting extra 5s...")
-                    await asyncio.sleep(5)
+                    print(f"    ⚠️ Link preview didn't appear, waiting extra 2s...")
+                    await asyncio.sleep(2)
                     print(f"    ✅ Proceeding with send")
             else:
                 print(f"  [7.5/9] ⏳ No link detected, proceeding...")

@@ -2,169 +2,1210 @@
   "Mtwapa,Kilifi": {
     "failures": 3,
     "first_failure": "2026-08-11T00:01:11.379378",
-    "last_failure": "2026-08-11T00:01:25.303032",
+    "last_failure": "2026-08-11T22:02:10.799260",
     "status": "active"
   },
   "DAKTARI LURAMBI CBD SECONDHAND": {
     "failures": 3,
     "first_failure": "2026-08-11T00:01:27.677011",
-    "last_failure": "2026-08-11T00:01:36.295706",
-    "status": "active"
+    "last_failure": "2026-08-11T21:52:21.774671",
+    "status": "active",
+    "last_success": "2026-08-11T15:32:36.454465"
   },
   "Nairobi buy and Sell": {
-    "failures": 6,
+    "failures": 3,
     "first_failure": "2026-08-11T00:01:39.025132",
-    "last_failure": "2026-08-11T00:16:14.656288",
-    "status": "active"
+    "last_failure": "2026-08-11T22:16:18.349332",
+    "status": "active",
+    "last_success": "2026-08-11T12:53:23.962993"
   },
   "CHEP~S": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:01:49.958623",
-    "last_failure": "2026-08-11T00:02:00.801317",
-    "status": "active"
+    "last_failure": "2026-08-11T09:35:00.484275",
+    "status": "active",
+    "last_success": "2026-08-11T20:25:56.563865"
   },
   "THIKA, JUJA, RUIRU SOKO FORUM": {
-    "failures": 6,
+    "failures": 0,
     "first_failure": "2026-08-11T00:02:04.751735",
     "last_failure": "2026-08-11T00:17:22.586614",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:53:40.689207"
   },
   "GENERAL HOUSEHOLD SUPPLY": {
     "failures": 3,
     "first_failure": "2026-08-11T00:02:16.134712",
-    "last_failure": "2026-08-11T00:02:24.679648",
-    "status": "active"
+    "last_failure": "2026-08-11T22:13:21.256508",
+    "status": "active",
+    "last_success": "2026-08-11T11:14:41.464118"
   },
   "254 market": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:02:28.332142",
     "last_failure": "2026-08-11T00:02:37.182476",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-12T00:05:59.985876"
   },
   "Stend mandazi market": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:14:04.123542",
     "last_failure": "2026-08-11T00:14:13.708198",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T22:55:26.511096"
   },
   "KAKAMEGA BLACK MARKET": {
     "failures": 3,
     "first_failure": "2026-08-11T00:14:16.411824",
-    "last_failure": "2026-08-11T00:14:25.231816",
-    "status": "active"
+    "last_failure": "2026-08-11T22:32:50.937404",
+    "status": "active",
+    "last_success": "2026-08-11T12:44:39.613372"
   },
   "Amsal collection": {
     "failures": 3,
     "first_failure": "2026-08-11T00:14:29.003994",
-    "last_failure": "2026-08-11T00:14:40.582228",
-    "status": "active"
+    "last_failure": "2026-08-11T22:32:26.898502",
+    "status": "active",
+    "last_success": "2026-08-11T11:18:16.838951"
   },
   "CANAAN PROPERTIES NETWORK": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:14:44.536368",
     "last_failure": "2026-08-11T00:14:53.851087",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:42:04.732297"
   },
   "SELLING AND BUYING NRB": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:14:56.329383",
-    "last_failure": "2026-08-11T00:15:06.608786",
-    "status": "active"
+    "last_failure": "2026-08-11T09:37:02.181446",
+    "status": "active",
+    "last_success": "2026-08-11T20:18:07.671627"
   },
   "BLACK ~ MARKET": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:15:09.205375",
     "last_failure": "2026-08-11T00:15:16.739577",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:17:10.384240"
   },
   "Kakamega biashara centre": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:15:19.888027",
     "last_failure": "2026-08-11T00:15:27.402119",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:23:51.259947"
   },
   "Thika, Juja": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:15:29.939137",
     "last_failure": "2026-08-11T00:15:38.965173",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:35:39.475084"
   },
   "diani what's up": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:15:42.048547",
     "last_failure": "2026-08-11T00:15:50.939449",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:15:13.685700"
   },
   "Kakamega trade connect": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:15:53.120719",
     "last_failure": "2026-08-11T00:16:01.828180",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:01:50.042683"
   },
   "MOMBASA BUSINESS ONLINE": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:16:17.978898",
     "last_failure": "2026-08-11T00:16:28.085734",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:13:08.102154"
   },
   "all commodities market": {
     "failures": 3,
     "first_failure": "2026-08-11T00:16:30.459466",
-    "last_failure": "2026-08-11T00:16:44.106623",
-    "status": "active"
+    "last_failure": "2026-08-11T22:07:47.145608",
+    "status": "active",
+    "last_success": "2026-08-11T12:51:13.669184"
   },
   "Team Nyangweso business arena": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:16:47.060131",
     "last_failure": "2026-08-11T00:16:58.226990",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:29:35.046978"
   },
   "KAKAMEGA TRADERS": {
     "failures": 3,
     "first_failure": "2026-08-11T00:17:02.213471",
-    "last_failure": "2026-08-11T00:17:12.223545",
-    "status": "active"
+    "last_failure": "2026-08-11T21:49:11.824824",
+    "status": "active",
+    "last_success": "2026-08-11T15:25:39.967957"
   },
   "Advertise Your Business Here": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:17:27.002190",
     "last_failure": "2026-08-11T00:17:37.243705",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T20:58:08.789026"
   },
   "VILLANTAGE HOME FURNITURES Sigalagala Branch": {
     "failures": 3,
     "first_failure": "2026-08-11T00:17:40.489729",
-    "last_failure": "2026-08-11T00:17:48.304943",
+    "last_failure": "2026-08-11T20:43:52.099098",
     "status": "active"
   },
   "Mji Mkuu Marketplace": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:17:51.801722",
     "last_failure": "2026-08-11T00:18:00.417142",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:45:03.646294"
   },
   "buy and sell within kakamega": {
-    "failures": 3,
+    "failures": 0,
     "first_failure": "2026-08-11T00:18:04.043230",
     "last_failure": "2026-08-11T00:18:13.417141",
-    "status": "active"
+    "status": "active",
+    "last_success": "2026-08-11T23:46:30.679834"
   },
   "Hustlers national forum": {
     "failures": 3,
     "first_failure": "2026-08-11T00:18:16.789709",
-    "last_failure": "2026-08-11T00:18:26.157587",
+    "last_failure": "2026-08-11T21:46:51.232354",
     "status": "active"
   },
   "jiinue Real Estate Ltd": {
-    "failures": 1,
+    "failures": 3,
     "first_failure": "2026-08-11T00:18:29.597005",
-    "last_failure": "2026-08-11T00:18:29.597023",
+    "last_failure": "2026-08-11T23:44:10.063173",
     "status": "active"
   },
   "WINREVA AUTO": {
-    "failures": 2,
+    "failures": 0,
     "first_failure": "2026-08-11T00:23:12.355567",
     "last_failure": "2026-08-11T00:23:17.410036",
+    "status": "active",
+    "last_success": "2026-08-11T22:44:21.541885"
+  },
+  "ELDORET PRIME MARKET COMPANY": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:08:48.826993",
+    "last_failure": "2026-08-11T09:09:14.104574",
+    "status": "active",
+    "last_success": "2026-08-11T21:03:02.703607"
+  },
+  "HOME LAND GAS POINT AND ELECTRONICS": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:09:26.021113",
+    "last_failure": "2026-08-11T09:09:48.156426",
+    "status": "active",
+    "last_success": "2026-08-11T23:16:25.802752"
+  },
+  "Mombasa Info & Ads": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:09:56.469927",
+    "last_failure": "2026-08-11T09:10:16.411006",
+    "status": "active",
+    "last_success": "2026-08-11T20:39:07.328570"
+  },
+  "THE ENTREPRENEURE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:10:24.641039",
+    "last_failure": "2026-08-11T23:02:43.788511",
+    "status": "active"
+  },
+  "The Black Soko": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:10:54.412461",
+    "last_failure": "2026-08-11T22:20:06.061640",
+    "status": "active",
+    "last_success": "2026-08-11T12:25:22.716911"
+  },
+  "Nyanga": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:11:22.943159",
+    "last_failure": "2026-08-11T21:52:42.988292",
+    "status": "active",
+    "last_success": "2026-08-11T13:52:46.473888"
+  },
+  "pozze empire uoe marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:11:48.770503",
+    "last_failure": "2026-08-11T21:02:52.161520",
+    "status": "active"
+  },
+  "Bungoma Sokoni": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:12:17.690961",
+    "last_failure": "2026-08-11T09:12:39.748282",
+    "status": "active",
+    "last_success": "2026-08-11T22:56:07.485428"
+  },
+  "PASSION PUSHER MARKET": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:12:48.447612",
+    "last_failure": "2026-08-11T20:46:28.007340",
+    "status": "active"
+  },
+  "JKUAT Business Centre and Marketplace": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:13:17.664388",
+    "last_failure": "2026-08-11T09:13:37.205780",
+    "status": "active",
+    "last_success": "2026-08-12T00:04:33.551543"
+  },
+  "FREE TRADING BLACK MARKET": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:13:44.775543",
+    "last_failure": "2026-08-11T09:14:08.071630",
+    "status": "active",
+    "last_success": "2026-08-11T20:28:49.592715"
+  },
+  "KENYA BUSINESS COMMUNITY 1": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:14:17.488426",
+    "last_failure": "2026-08-11T22:19:21.763655",
+    "status": "active",
+    "last_success": "2026-08-11T13:23:55.403723"
+  },
+  "Online Buy and Sell": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:15:29.502040",
+    "last_failure": "2026-08-11T09:15:54.213922",
+    "status": "active",
+    "last_success": "2026-08-11T22:37:55.971540"
+  },
+  "KACH BLACKMARKET": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:16:06.003325",
+    "last_failure": "2026-08-11T09:16:24.193688",
+    "status": "active",
+    "last_success": "2026-08-11T20:29:33.006323"
+  },
+  "Lamaar business group": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:16:34.068602",
+    "last_failure": "2026-08-11T09:16:53.973850",
+    "status": "active",
+    "last_success": "2026-08-11T23:58:47.667246"
+  },
+  "Diani information": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:17:05.121230",
+    "last_failure": "2026-08-11T22:20:52.837450",
+    "status": "active",
+    "last_success": "2026-08-11T09:56:53.515685"
+  },
+  "jiinue lands kenya": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:23:29.191019",
+    "last_failure": "2026-08-11T22:27:26.075623",
+    "status": "active"
+  },
+  "Pata land": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:25:02.008626",
+    "last_failure": "2026-08-11T22:51:07.258593",
+    "status": "active"
+  },
+  "Nairobi Marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:29:19.698645",
+    "last_failure": "2026-08-11T22:15:31.841462",
+    "status": "active",
+    "last_success": "2026-08-11T13:28:41.398297"
+  },
+  "mt. kenya": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:29:28.325425",
+    "last_failure": "2026-08-11T22:32:04.045653",
+    "status": "active",
+    "last_success": "2026-08-11T16:16:49.143865"
+  },
+  "On line marketing": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:30:16.345547",
+    "last_failure": "2026-08-11T22:22:39.794104",
+    "status": "active",
+    "last_success": "2026-08-11T11:12:26.122349"
+  },
+  "Kagumba Agencies buy and sell goods siga": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:30:47.509346",
+    "last_failure": "2026-08-11T09:31:08.355470",
+    "status": "active",
+    "last_success": "2026-08-11T21:24:56.818721"
+  },
+  "LAND SALE AND RESALE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:31:47.116541",
+    "last_failure": "2026-08-11T22:04:24.541172",
+    "status": "active",
+    "last_success": "2026-08-11T14:51:11.974911"
+  },
+  "Eldomarket Thrift & Thrive": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:32:15.393371",
+    "last_failure": "2026-08-11T09:32:35.917502",
+    "status": "active",
+    "last_success": "2026-08-11T20:24:22.319823"
+  },
+  "UoE mini blackmarket": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:32:45.859822",
+    "last_failure": "2026-08-11T09:33:05.647129",
+    "status": "active",
+    "last_success": "2026-08-11T21:27:07.133986"
+  },
+  "KwaleFarmers Discussion": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:33:16.630494",
+    "last_failure": "2026-08-11T23:31:16.601793",
+    "status": "active"
+  },
+  "Diani information centre": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:33:49.111720",
+    "last_failure": "2026-08-11T09:34:06.843680",
+    "status": "active",
+    "last_success": "2026-08-12T00:00:14.561204"
+  },
+  "NYERI COUNTY": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:34:14.520893",
+    "last_failure": "2026-08-11T12:16:14.501323",
+    "status": "active",
+    "last_success": "2026-08-12T00:00:56.355260"
+  },
+  "RVIST SECOND HAND GOODS": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:35:09.340325",
+    "last_failure": "2026-08-11T09:35:31.339763",
+    "status": "active",
+    "last_success": "2026-08-11T23:37:47.955466"
+  },
+  "UOE biggest black market": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:35:38.923719",
+    "last_failure": "2026-08-11T22:30:32.872919",
+    "status": "active",
+    "last_success": "2026-08-11T15:12:35.568442"
+  },
+  "BUSINESS GROUP NETWORKING KENYA": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:36:12.285506",
+    "last_failure": "2026-08-11T09:36:32.113824",
+    "status": "active",
+    "last_success": "2026-08-11T22:38:42.849957"
+  },
+  "DIANI WHAT'S UP MEMBERS Group": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:37:11.489843",
+    "last_failure": "2026-08-11T09:37:31.125777",
+    "status": "active",
+    "last_success": "2026-08-11T22:41:31.818230"
+  },
+  "EL MaGNiFiCo": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:37:40.427257",
+    "last_failure": "2026-08-11T21:49:55.753154",
+    "status": "active",
+    "last_success": "2026-08-11T11:44:45.579641"
+  },
+  "SIGALAGALA BLACK MARKET AND SECONDHAND ITEMS SALES": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:38:11.799519",
+    "last_failure": "2026-08-11T09:38:37.268711",
+    "status": "active",
+    "last_success": "2026-08-11T23:04:17.357747"
+  },
+  "Jiinue Lands Kenya": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:38:44.815742",
+    "last_failure": "2026-08-11T23:43:44.149945",
+    "status": "active"
+  },
+  "MOI ANNEX BIGGEST BLACK MARKET": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:39:11.737820",
+    "last_failure": "2026-08-11T22:30:13.221048",
+    "status": "active"
+  },
+  "TRM": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:39:42.334706",
+    "last_failure": "2026-08-11T09:40:02.110711",
+    "status": "active",
+    "last_success": "2026-08-11T21:22:04.479177"
+  },
+  "THE BUSINESS & MARKETING EDGE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:40:11.999827",
+    "last_failure": "2026-08-11T21:55:20.383206",
+    "status": "active",
+    "last_success": "2026-08-11T10:39:43.843762"
+  },
+  "VILLANTAGE OLX": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:40:42.149567",
+    "last_failure": "2026-08-11T22:13:45.809670",
+    "status": "active",
+    "last_success": "2026-08-11T13:03:19.463035"
+  },
+  "WESTLANDS-KABETE-KIKUYU-MUGUGA": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:41:13.767761",
+    "last_failure": "2026-08-11T22:00:38.947011",
+    "status": "active"
+  },
+  "MASENO JIJI BUY & SELL": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:41:46.542078",
+    "last_failure": "2026-08-11T09:42:07.461420",
+    "status": "active",
+    "last_success": "2026-08-12T00:02:24.867038"
+  },
+  "Baby collection": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:42:14.645531",
+    "last_failure": "2026-08-11T09:42:21.130114",
+    "status": "active",
+    "last_success": "2026-08-11T20:52:02.221637"
+  },
+  "la masai sogomo": {
+    "failures": 3,
+    "first_failure": "2026-08-11T09:48:53.320826",
+    "last_failure": "2026-08-11T23:05:15.239624",
+    "status": "active"
+  },
+  "CAR & PROPERTY BAZAAR": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:52:07.057107",
+    "last_failure": "2026-08-11T09:52:28.489303",
+    "status": "active",
+    "last_success": "2026-08-12T00:03:08.072879"
+  },
+  "UOE BUYING": {
+    "failures": 0,
+    "first_failure": "2026-08-11T09:52:48.239175",
+    "last_failure": "2026-08-11T09:52:48.239195",
+    "status": "active",
+    "last_success": "2026-08-11T22:45:05.665206"
+  },
+  "Soko 'Sup Marketing Group": {
+    "failures": 3,
+    "first_failure": "2026-08-11T10:09:08.986553",
+    "last_failure": "2026-08-11T22:08:29.489757",
+    "status": "active"
+  },
+  "Diani events and news": {
+    "failures": 3,
+    "first_failure": "2026-08-11T10:09:49.707890",
+    "last_failure": "2026-08-11T22:27:43.859618",
+    "status": "active"
+  },
+  "Direct Marketing Pot": {
+    "failures": 3,
+    "first_failure": "2026-08-11T10:16:50.676600",
+    "last_failure": "2026-08-11T23:23:40.088298",
+    "status": "active"
+  },
+  "Nairobi county politics": {
+    "failures": 3,
+    "first_failure": "2026-08-11T10:48:02.713549",
+    "last_failure": "2026-08-11T21:08:20.412418",
+    "status": "active"
+  },
+  "Kakamega trade inn center": {
+    "failures": 3,
+    "first_failure": "2026-08-11T10:57:17.045048",
+    "last_failure": "2026-08-11T21:51:58.548582",
+    "status": "active",
+    "last_success": "2026-08-11T10:57:30.340294"
+  },
+  "MONTE BUSINESS PLATFORM (MBP)": {
+    "failures": 3,
+    "first_failure": "2026-08-11T11:03:40.246251",
+    "last_failure": "2026-08-11T20:24:01.678800",
+    "status": "active"
+  },
+  "KAHAWA SUKARI WRITTERS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T11:26:42.299859",
+    "last_failure": "2026-08-11T21:59:25.281802",
+    "status": "active",
+    "last_success": "2026-08-11T11:27:02.900517"
+  },
+  "Nairobi realtors and property dealers": {
+    "failures": 3,
+    "first_failure": "2026-08-11T11:42:57.301788",
+    "last_failure": "2026-08-11T23:23:12.207659",
+    "status": "active"
+  },
+  "Pata Land & Plot Network": {
+    "failures": 3,
+    "first_failure": "2026-08-11T12:04:57.019872",
+    "last_failure": "2026-08-11T21:53:04.016738",
+    "status": "active"
+  },
+  "VILLAGE GAS SUPPLIERS 2": {
+    "failures": 3,
+    "first_failure": "2026-08-11T12:36:50.089568",
+    "last_failure": "2026-08-11T20:55:47.652927",
+    "status": "active"
+  },
+  "KIRINYAGA LIBERATORS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T12:49:31.705818",
+    "last_failure": "2026-08-11T23:16:14.892103",
+    "status": "active"
+  },
+  "Jiinue Real Estate Ltd": {
+    "failures": 3,
+    "first_failure": "2026-08-11T13:00:35.979093",
+    "last_failure": "2026-08-11T21:42:32.965469",
+    "status": "active"
+  },
+  "MACHAKOS, ATHI RIVER, KITENGELA MARKET FORUM": {
+    "failures": 3,
+    "first_failure": "2026-08-11T13:06:25.500984",
+    "last_failure": "2026-08-11T21:43:48.024155",
+    "status": "active"
+  },
+  "Eastern Bypass Mwananchimarket": {
+    "failures": 3,
+    "first_failure": "2026-08-11T13:18:07.880426",
+    "last_failure": "2026-08-11T22:23:03.671910",
+    "status": "active"
+  },
+  "BUY AND SELL ITEMS AROUND EGERTON, NJORO, RVIST, NAKURU TOWN": {
+    "failures": 3,
+    "first_failure": "2026-08-11T14:04:18.123268",
+    "last_failure": "2026-08-11T21:51:14.709212",
+    "status": "active"
+  },
+  "EGERTON_UNI": {
+    "failures": 3,
+    "first_failure": "2026-08-11T14:13:37.746474",
+    "last_failure": "2026-08-11T21:20:31.718548",
+    "status": "active"
+  },
+  "CRANE ELECTRONICS AND GAS REFILLS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T14:30:49.905993",
+    "last_failure": "2026-08-11T20:48:59.382284",
+    "status": "active"
+  },
+  "+254 MARKET ARENA": {
+    "failures": 3,
+    "first_failure": "2026-08-11T14:42:28.652993",
+    "last_failure": "2026-08-11T22:06:17.014399",
+    "status": "active"
+  },
+  "Mombasa online soko": {
+    "failures": 3,
+    "first_failure": "2026-08-11T14:45:53.711428",
+    "last_failure": "2026-08-11T21:39:45.839610",
+    "status": "active"
+  },
+  "LANGATA,RONGAI,NGONG, KISERIAN": {
+    "failures": 3,
+    "first_failure": "2026-08-11T15:21:51.869638",
+    "last_failure": "2026-08-11T20:48:24.453935",
+    "status": "active"
+  },
+  "DIRECT MARKETING COMMUNITY": {
+    "failures": 3,
+    "first_failure": "2026-08-11T15:28:40.763759",
+    "last_failure": "2026-08-11T22:52:23.868114",
+    "status": "active"
+  },
+  "MMUST Buy n Sells": {
+    "failures": 0,
+    "first_failure": "2026-08-11T20:19:02.612706",
+    "last_failure": "2026-08-11T20:19:02.612778",
+    "status": "active",
+    "last_success": "2026-08-11T20:19:16.542022"
+  },
+  "Naivasha Buy and Sell": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:46:56.538143",
+    "last_failure": "2026-08-11T21:47:11.823549",
+    "status": "active"
+  },
+  "Kitengera Buy and Sell": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:47:18.604651",
+    "last_failure": "2026-08-11T21:47:34.317715",
+    "status": "active"
+  },
+  "Buy and sell in Nakuru City": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:47:39.539536",
+    "last_failure": "2026-08-11T21:47:59.143997",
+    "status": "active"
+  },
+  "BUY AND SELL ITEMS AROUND EGERTON": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:48:05.628760",
+    "last_failure": "2026-08-11T21:48:23.284599",
+    "status": "active"
+  },
+  "EGERTON RVST BLACK MARKET": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:48:30.371911",
+    "last_failure": "2026-08-11T21:48:47.509710",
+    "status": "active"
+  },
+  "Kenplot market": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:49:17.655962",
+    "last_failure": "2026-08-11T21:49:31.324592",
+    "status": "active"
+  },
+  "RVIST MARKET PLACE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:50:03.686384",
+    "last_failure": "2026-08-11T21:50:21.092213",
+    "status": "active"
+  },
+  "ANNEX BLACK MARKET 3": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:50:27.442731",
+    "last_failure": "2026-08-11T21:50:43.622269",
+    "status": "active"
+  },
+  "Team Nyangweso business complex": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:51:21.096573",
+    "last_failure": "2026-08-11T21:51:37.180978",
+    "status": "active"
+  },
+  "UOE BUYING & SELLING PLACE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:53:10.463564",
+    "last_failure": "2026-08-11T21:53:29.613502",
+    "status": "active"
+  },
+  "KLADIKA KENYA": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:53:37.465826",
+    "last_failure": "2026-08-11T21:53:52.876357",
+    "status": "active"
+  },
+  "Villantage home made assets": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:53:58.101959",
+    "last_failure": "2026-08-11T21:54:16.036031",
+    "status": "active"
+  },
+  "Market Place By Home & Away Destinations": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:54:24.011451",
+    "last_failure": "2026-08-11T21:54:39.344774",
+    "status": "active"
+  },
+  "Writing tools": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:54:44.627287",
+    "last_failure": "2026-08-11T21:54:57.329482",
+    "status": "active"
+  },
+  "Sisi investors (Pilotinc)": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:55:27.151875",
+    "last_failure": "2026-08-11T21:55:45.323027",
+    "status": "active"
+  },
+  "Narok /Kitale Properties": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:55:53.574182",
+    "last_failure": "2026-08-11T21:56:09.782641",
+    "status": "active"
+  },
+  "SOKO YETU": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:56:15.729908",
+    "last_failure": "2026-08-11T21:56:32.163549",
+    "status": "active"
+  },
+  "Langata,rongai": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:56:37.665961",
+    "last_failure": "2026-08-11T21:56:50.067238",
+    "status": "active"
+  },
+  "THIKA ROAD BUSINESS BELT": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:56:57.418314",
+    "last_failure": "2026-08-11T21:57:13.871061",
+    "status": "active"
+  },
+  "Selling and Buying": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:57:19.040883",
+    "last_failure": "2026-08-11T21:57:34.199758",
+    "status": "active"
+  },
+  "Nanyuki buy and sell": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:57:40.712714",
+    "last_failure": "2026-08-11T21:57:57.656285",
+    "status": "active"
+  },
+  "KAREN BUSINESS FORUM": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:58:04.515303",
+    "last_failure": "2026-08-11T21:58:23.386254",
+    "status": "active"
+  },
+  "Kiambu sell & buy": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:58:28.953565",
+    "last_failure": "2026-08-11T21:58:43.790089",
+    "status": "active"
+  },
+  "MASENO BUSINESS MARKET": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:58:49.791290",
+    "last_failure": "2026-08-11T21:59:03.413795",
+    "status": "active"
+  },
+  "VILLANTAGE households resells": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:59:32.035481",
+    "last_failure": "2026-08-11T21:59:52.239930",
+    "status": "active"
+  },
+  "Nyeri Buy and Sell": {
+    "failures": 3,
+    "first_failure": "2026-08-11T21:59:59.389848",
+    "last_failure": "2026-08-11T22:00:14.225107",
+    "status": "active"
+  },
+  "Nakuru-Nairobi": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:00:43.798458",
+    "last_failure": "2026-08-11T22:00:58.851080",
+    "status": "active"
+  },
+  "MONTE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:01:05.668895",
+    "last_failure": "2026-08-11T22:01:22.892317",
+    "status": "active"
+  },
+  "Kilimani Marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:01:29.641440",
+    "last_failure": "2026-08-11T22:01:48.792926",
+    "status": "active"
+  },
+  "Runda Marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:02:18.099134",
+    "last_failure": "2026-08-11T22:02:34.469190",
+    "status": "active"
+  },
+  "Westlands Business Forum": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:02:41.427955",
+    "last_failure": "2026-08-11T22:02:57.958037",
+    "status": "active"
+  },
+  "Kakamega Trade Centre": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:03:05.991620",
+    "last_failure": "2026-08-11T22:03:20.346411",
+    "status": "active"
+  },
+  "Karen Marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:03:27.998189",
+    "last_failure": "2026-08-11T22:03:41.207892",
+    "status": "active"
+  },
+  "BLACKMARKET kakamega": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:03:48.904610",
+    "last_failure": "2026-08-11T22:04:03.020696",
+    "status": "active"
+  },
+  "koro market centre": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:04:30.193199",
+    "last_failure": "2026-08-11T22:04:46.311826",
+    "status": "active"
+  },
+  "Kahawa Wendani,Sukari": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:04:54.166334",
+    "last_failure": "2026-08-11T22:05:09.517617",
+    "status": "active"
+  },
+  "NAIROBI MARKETPLACE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:05:16.252910",
+    "last_failure": "2026-08-11T22:05:32.392060",
+    "status": "active"
+  },
+  "NAIROBI BUYING AND SELLING": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:05:38.676948",
+    "last_failure": "2026-08-11T22:05:54.326955",
+    "status": "active"
+  },
+  "ELDORET buy and sell": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:06:22.997864",
+    "last_failure": "2026-08-11T22:06:38.450897",
+    "status": "active"
+  },
+  "Rehan collection": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:06:45.336650",
+    "last_failure": "2026-08-11T22:07:02.781123",
+    "status": "active"
+  },
+  "SOKO HURU": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:07:07.968254",
+    "last_failure": "2026-08-11T22:07:22.661906",
+    "status": "active"
+  },
+  "MOMBASA MARKET 3": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:07:52.027175",
+    "last_failure": "2026-08-11T22:08:07.567012",
+    "status": "active"
+  },
+  "GEN Z MARKET": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:08:37.527675",
+    "last_failure": "2026-08-11T22:08:53.883901",
+    "status": "active"
+  },
+  "MFALME Properties": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:09:00.800157",
+    "last_failure": "2026-08-11T22:09:17.816984",
+    "status": "active"
+  },
+  "LANGATA & KAREN MwananchiMarket": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:09:26.668838",
+    "last_failure": "2026-08-11T22:09:40.001460",
+    "status": "active"
+  },
+  "2025 KAKAMEGA DEALERS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:09:45.819521",
+    "last_failure": "2026-08-11T22:10:03.442955",
+    "status": "active"
+  },
+  "FASHION TRENDS BUSINESS GROUP": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:10:10.211146",
+    "last_failure": "2026-08-11T22:10:24.436209",
+    "status": "active"
+  },
+  "BAMBURI MOMBASA BUSINESS PEOPLE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:10:31.863741",
+    "last_failure": "2026-08-11T22:10:47.560486",
+    "status": "active"
+  },
+  "Daktari Home furniture": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:10:54.693886",
+    "last_failure": "2026-08-11T22:11:08.715248",
+    "status": "active"
+  },
+  "MOMBASA BUSINESS Online": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:11:15.181837",
+    "last_failure": "2026-08-11T22:11:29.015712",
+    "status": "active"
+  },
+  "buy & sell within kakamega": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:11:36.656172",
+    "last_failure": "2026-08-11T22:11:52.573521",
+    "status": "active"
+  },
+  "DRESS CODE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:11:57.837656",
+    "last_failure": "2026-08-11T22:12:12.057649",
+    "status": "active"
+  },
+  "MASENO JIJI BUY": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:12:19.094798",
+    "last_failure": "2026-08-11T22:12:35.863446",
+    "status": "active"
+  },
+  "EASTLEIGH BUSINESS MASSIVE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:12:43.435108",
+    "last_failure": "2026-08-11T22:12:59.025924",
+    "status": "active"
+  },
+  "The Nairobi Markets": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:13:53.029933",
+    "last_failure": "2026-08-11T22:14:06.569152",
+    "status": "active"
+  },
+  "Village gas business deals": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:14:12.032787",
+    "last_failure": "2026-08-11T22:14:29.841467",
+    "status": "active"
+  },
+  "Mfalme Road": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:14:35.384206",
+    "last_failure": "2026-08-11T22:14:49.613859",
+    "status": "active"
+  },
+  "HOME ESSENTIALS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:14:55.905931",
+    "last_failure": "2026-08-11T22:15:10.869122",
+    "status": "active"
+  },
+  "ANTIQUE FURNITURES": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:15:37.679392",
+    "last_failure": "2026-08-11T22:15:53.943164",
+    "status": "active"
+  },
+  "Kakamega cakes": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:16:24.052666",
+    "last_failure": "2026-08-11T22:16:41.704138",
+    "status": "active"
+  },
+  "Kisumu Business Hub": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:16:47.988373",
+    "last_failure": "2026-08-11T22:17:02.311545",
+    "status": "active"
+  },
+  "Kakamega-Khayega Black market": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:17:08.697442",
+    "last_failure": "2026-08-11T22:17:25.840664",
+    "status": "active"
+  },
+  "Rongai Marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:17:32.116187",
+    "last_failure": "2026-08-11T22:17:44.669200",
+    "status": "active"
+  },
+  "GLUCKLICH TRADING CENTRE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:17:51.340169",
+    "last_failure": "2026-08-11T22:18:08.317030",
+    "status": "active"
+  },
+  "KAKAMEGA BUY AND SALE Deals": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:18:15.176475",
+    "last_failure": "2026-08-11T22:18:31.996600",
+    "status": "active"
+  },
+  "JKUAT business centre": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:18:39.381711",
+    "last_failure": "2026-08-11T22:18:58.884474",
+    "status": "active"
+  },
+  "Machakos, athi": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:19:28.686012",
+    "last_failure": "2026-08-11T22:19:46.014142",
+    "status": "active"
+  },
+  "ELECTRONICS SALES": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:20:12.693594",
+    "last_failure": "2026-08-11T22:20:29.033893",
+    "status": "active"
+  },
+  "KISUMU BUSINESS ARENA": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:20:58.629219",
+    "last_failure": "2026-08-11T22:21:15.506334",
+    "status": "active"
+  },
+  "UOE BIZ CONNECT 2": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:21:23.326038",
+    "last_failure": "2026-08-11T22:21:37.274598",
+    "status": "active"
+  },
+  "Social marketing": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:21:43.080840",
+    "last_failure": "2026-08-11T22:21:57.118891",
+    "status": "active"
+  },
+  "ROYAL ELECTRONICS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:22:04.087221",
+    "last_failure": "2026-08-11T22:22:19.125397",
+    "status": "active"
+  },
+  "WARDROBE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:23:09.143822",
+    "last_failure": "2026-08-11T22:23:20.894539",
+    "status": "active"
+  },
+  "KENYA LAND OWNERS AND INVESTORS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:23:28.019374",
+    "last_failure": "2026-08-11T22:23:44.710266",
+    "status": "active"
+  },
+  "Quick": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:23:50.578956",
+    "last_failure": "2026-08-11T22:24:03.553357",
+    "status": "active"
+  },
+  "TURNITIN LOGINS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:24:10.679495",
+    "last_failure": "2026-08-11T22:24:25.381279",
+    "status": "active"
+  },
+  "Glodmic luxury motors": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:24:32.668327",
+    "last_failure": "2026-08-11T22:24:50.289994",
+    "status": "active"
+  },
+  "THE GREAT CENTRAL WITH HON ROSE NYAMUNGA 2027 SENATOR": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:24:57.914662",
+    "last_failure": "2026-08-11T22:25:15.973453",
+    "status": "active"
+  },
+  "Kakamega-Khayega": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:25:21.882222",
+    "last_failure": "2026-08-11T22:25:39.637641",
+    "status": "active"
+  },
+  "MOMBASA MARKET 1": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:25:47.289887",
+    "last_failure": "2026-08-11T22:26:02.698289",
+    "status": "active"
+  },
+  "SHOPPING MALL NRB": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:26:07.385829",
+    "last_failure": "2026-08-11T22:27:04.610092",
+    "status": "active"
+  },
+  "RUIRU BUSINESS(BUY AND SALE)": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:27:49.906481",
+    "last_failure": "2026-08-11T22:28:05.563460",
+    "status": "active"
+  },
+  "FAUZIYA": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:28:10.962951",
+    "last_failure": "2026-08-11T22:28:23.899376",
+    "status": "active"
+  },
+  "South B Business Network": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:28:31.783549",
+    "last_failure": "2026-08-11T22:28:49.455282",
+    "status": "active"
+  },
+  "Clothing Kenya wide": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:28:56.877289",
+    "last_failure": "2026-08-11T22:29:14.407855",
+    "status": "active"
+  },
+  "BUSINESS BLOCK": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:29:18.510655",
+    "last_failure": "2026-08-11T22:29:31.260539",
+    "status": "active"
+  },
+  "Mali safi second hands": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:29:36.814165",
+    "last_failure": "2026-08-11T22:29:51.931231",
+    "status": "active"
+  },
+  "BEND THE TREND WEARS": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:30:37.471976",
+    "last_failure": "2026-08-11T22:30:53.205026",
+    "status": "active"
+  },
+  "DAKTARI MMUST TRADE ZONE": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:31:07.443830",
+    "last_failure": "2026-08-11T22:31:21.677500",
+    "status": "active"
+  },
+  "CITYHOMES MARKETING GROUP": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:31:28.080157",
+    "last_failure": "2026-08-11T22:31:44.481438",
+    "status": "active"
+  },
+  "Riverside Marketplace": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:32:57.500233",
+    "last_failure": "2026-08-11T22:33:13.355359",
+    "status": "active"
+  },
+  "SIGA ,MMUST,Amalemba": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:33:20.942572",
+    "last_failure": "2026-08-11T22:33:37.847544",
+    "status": "active"
+  },
+  "Kakamega secondhand grp": {
+    "failures": 3,
+    "first_failure": "2026-08-11T22:33:44.179665",
+    "last_failure": "2026-08-11T22:34:07.238892",
+    "status": "active"
+  },
+  "JUNCTION UOE BLACKMARKET": {
+    "failures": 0,
+    "first_failure": "2026-08-11T22:34:16.331893",
+    "last_failure": "2026-08-11T22:34:16.331916",
+    "status": "active",
+    "last_success": "2026-08-11T22:34:34.059673"
+  },
+  "Kenya group of business": {
+    "failures": 3,
+    "first_failure": "2026-08-11T23:50:10.156249",
+    "last_failure": "2026-08-11T23:50:38.835149",
+    "status": "active"
+  },
+  "EGERTON_MARKETPLACE": {
+    "failures": 2,
+    "first_failure": "2026-08-12T01:39:27.199575",
+    "last_failure": "2026-08-12T01:39:29.396616",
     "status": "active"
   }
 }

@@ -8,11 +8,11 @@ Handles all WhatsApp Web login and session management:
 - Browser launch with anti-detection
 - 5 retry attempts with 1 minute between retries
 - 4 minute wait before page refresh
-- Media blocking for faster performance
 """
 
 import json
 import asyncio
+import shutil
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -22,8 +22,9 @@ from playwright.async_api import async_playwright
 
 BASE_DIR = Path(__file__).parent
 SESSION_DIR = BASE_DIR / "whatsapp_session"
+SESSION_FILE = BASE_DIR / "whatsapp_session.json"
 WHATSAPP_WEB_URL = "https://web.whatsapp.com"
-MAX_LOGIN_ATTEMPTS = 5  # Increased from 3 to 5
+MAX_LOGIN_ATTEMPTS = 5
 RETRY_DELAY = 60  # 1 minute between retries
 QR_REFRESH_DELAY = 360  # 4 minutes before refresh
 
@@ -43,7 +44,7 @@ class LoginManager:
         self.page = None
         self.playwright = None
         self.is_logged_in = False
-        self.media_blocked = False
+        self.qr_shown_after_valid_session = False
     
     # ============================================================
     # SESSION MANAGEMENT
@@ -117,57 +118,26 @@ class LoginManager:
             print(f"⚠️ Could not save session: {e}")
             return False
     
-    # ============================================================
-    # MEDIA BLOCKING (Performance Optimization)
-    # ============================================================
-    
-    async def block_media_downloads(self):
-        """
-        Block auto-download of media files for faster performance.
-        This prevents WhatsApp from downloading images, videos, and other media
-        during login and group navigation.
-        """
-        if self.media_blocked:
-            return
-        
-        print("🛑 Blocking media auto-downloads for faster performance...")
-        
-        # Media file extensions to block
-        media_extensions = [
-            '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.ico',  # Images
-            '.mp4', '.webm', '.avi', '.mov', '.mkv', '.flv', '.wmv',   # Videos
-            '.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac',            # Audio
-            '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',  # Documents
-            '.zip', '.rar', '.7z', '.tar', '.gz',                      # Archives
-        ]
-        
-        # Block media file requests
-        await self.page.route('**/*', lambda route: self._handle_media_route(route, media_extensions))
-        
-        self.media_blocked = True
-        print("✅ Media downloads blocked - performance optimized!")
-    
-    async def _handle_media_route(self, route, media_extensions):
-        """
-        Handle route interception for media files.
-        Blocks media files, allows all other requests.
-        """
-        url = route.request.url.lower()
-        
-        # Block media files
-        for ext in media_extensions:
-            if ext in url:
-                try:
-                    await route.abort()
-                except Exception:
-                    pass
-                return
-        
-        # Allow all other requests
+    async def delete_corrupted_session(self):
+        """Delete corrupted session folder and file"""
+        print("🗑️ Deleting corrupted session...")
         try:
-            await route.continue_()
-        except Exception:
-            pass
+            if SESSION_DIR.exists():
+                shutil.rmtree(SESSION_DIR)
+                print(f"   ✅ Deleted: {SESSION_DIR}")
+            
+            if SESSION_FILE.exists():
+                SESSION_FILE.unlink()
+                print(f"   ✅ Deleted: {SESSION_FILE}")
+            
+            SESSION_DIR.mkdir(exist_ok=True)
+            print("   ✅ Recreated session directory")
+            
+            self.qr_shown_after_valid_session = False
+            return True
+        except Exception as e:
+            print(f"   ❌ Error deleting session: {e}")
+            return False
     
     # ============================================================
     # BROWSER LAUNCH
@@ -186,11 +156,11 @@ class LoginManager:
                     '--disable-dev-shm-usage',
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
-                    '--disable-features=PreloadMediaEngagementData',  # Disable media preloading
-                    '--disable-features=AutomaticTabDiscarding',      # Keep tabs alive
-                    '--disable-background-timer-throttling',          # Better performance
-                    '--disable-backgrounding-occluded-windows',       # Better performance
-                    '--disable-renderer-backgrounding',               # Better performance
+                    '--disable-features=PreloadMediaEngagementData',
+                    '--disable-features=AutomaticTabDiscarding',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding',
                 ],
                 user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 viewport={'width': 1280, 'height': 720}
@@ -201,7 +171,6 @@ class LoginManager:
             else:
                 self.page = await self.context.new_page()
             
-            # Add anti-detection script
             await self.page.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined
@@ -215,7 +184,7 @@ class LoginManager:
             return False
     
     # ============================================================
-    # LOGIN WITH RETRY
+    # LOGIN WITH RETRY & CORRUPTION DETECTION
     # ============================================================
     
     async def login(self) -> bool:
@@ -226,10 +195,10 @@ class LoginManager:
         print(f"📋 Max attempts: {MAX_LOGIN_ATTEMPTS}")
         print(f"⏳ Retry delay: {RETRY_DELAY}s between attempts")
         print(f"🔄 Page refresh: After {QR_REFRESH_DELAY}s if no QR")
-        print("🛑 Media blocking: Enabled (faster performance)")
         print("=" * 60)
         
         await self.ensure_session()
+        self.qr_shown_after_valid_session = False
         
         for attempt in range(MAX_LOGIN_ATTEMPTS):
             attempt_num = attempt + 1
@@ -240,11 +209,9 @@ class LoginManager:
                     print(f"❌ Failed to launch browser on attempt {attempt_num}")
                     if attempt_num < MAX_LOGIN_ATTEMPTS:
                         print(f"⏳ Waiting {RETRY_DELAY}s before retry...")
+                        await self.cleanup()
                         await asyncio.sleep(RETRY_DELAY)
                     continue
-                
-                # Block media BEFORE loading WhatsApp (critical for performance)
-                await self.block_media_downloads()
                 
                 print("🌐 Loading WhatsApp Web...")
                 await self.page.goto(WHATSAPP_WEB_URL, wait_until='domcontentloaded')
@@ -260,6 +227,11 @@ class LoginManager:
                     return True
                 else:
                     print(f"❌ Login attempt {attempt_num} failed")
+                    
+                    if self.qr_shown_after_valid_session:
+                        print("⚠️ QR shown despite having a valid session. Session may be corrupted.")
+                        await self.delete_corrupted_session()
+                    
                     if attempt_num < MAX_LOGIN_ATTEMPTS:
                         print(f"⏳ Waiting {RETRY_DELAY}s before retry...")
                         await self.cleanup()
@@ -326,6 +298,11 @@ class LoginManager:
                                 if is_visible:
                                     print("📱 QR CODE FOUND! Scan with your phone")
                                     qr_shown = True
+                                    
+                                    if await self.check_session():
+                                        self.qr_shown_after_valid_session = True
+                                        print("   ⚠️ QR shown despite valid session - session may be corrupted")
+                                    
                                     break
                         except:
                             continue
@@ -347,7 +324,7 @@ class LoginManager:
                         await self.page.reload()
                         await asyncio.sleep(3)
                         last_refresh = current_time
-                        qr_shown = False  # Reset QR detection after refresh
+                        qr_shown = False
                 
                 # Check for errors
                 try:
@@ -394,7 +371,6 @@ class LoginManager:
         self.context = None
         self.browser = None
         self.playwright = None
-        self.media_blocked = False
     
     async def shutdown(self):
         """Shutdown login manager"""
