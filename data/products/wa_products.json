@@ -1093,11 +1093,11 @@
     {
       "id": "9221969611252522",
       "url": "https://wa.me/p/9221969611252522/254728157164",
-      "status": "pending",
+      "status": "posted",
       "scheduled_date": null,
       "scheduled_time": null,
-      "posted_date": null,
-      "posted_time": null,
+      "posted_date": "2026-08-12",
+      "posted_time": "16:52:48",
       "product_name": "Product 9221969611252522"
     },
     {
@@ -1123,11 +1123,11 @@
     {
       "id": "9256719717730615",
       "url": "https://wa.me/p/9256719717730615/254728157164",
-      "status": "pending",
+      "status": "posted",
       "scheduled_date": null,
       "scheduled_time": null,
-      "posted_date": null,
-      "posted_time": null,
+      "posted_date": "2026-08-12",
+      "posted_time": "23:17:06",
       "product_name": "Product 9256719717730615"
     },
     {

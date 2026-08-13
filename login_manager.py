@@ -4,7 +4,7 @@ Login Manager
 Handles all WhatsApp Web login and session management:
 - Session checking and validation
 - QR code display with retry logic
-- Persistent session storage
+- FRESH SESSION EACH TIME (no saved state to corrupt)
 - Browser launch with anti-detection
 - 5 retry attempts with 1 minute between retries
 - 4 minute wait before page refresh
@@ -38,20 +38,32 @@ SESSION_DIR.mkdir(exist_ok=True)
 class LoginManager:
     """Manages WhatsApp Web login and session"""
     
-    def __init__(self):
+    def __init__(self, use_saved_session: bool = False):
+        """
+        Initialize LoginManager
+        
+        Args:
+            use_saved_session: If True, try to use saved session (NOT RECOMMENDED)
+                              If False (default), always start fresh
+        """
         self.browser = None
         self.context = None
         self.page = None
         self.playwright = None
         self.is_logged_in = False
         self.qr_shown_after_valid_session = False
+        self.use_saved_session = use_saved_session  # Default: FALSE - FRESH SESSION
     
     # ============================================================
     # SESSION MANAGEMENT
     # ============================================================
     
     async def check_session(self) -> bool:
-        """Check if session exists and is valid"""
+        """Check if session exists and is valid - ONLY if using saved sessions"""
+        if not self.use_saved_session:
+            print("📱 Fresh session mode - always scan QR")
+            return False
+            
         session_folder = Path("whatsapp_session")
         session_file = Path("whatsapp_session.json")
         
@@ -78,22 +90,131 @@ class LoginManager:
         print("\n" + "=" * 60)
         print("🔐 SESSION MANAGEMENT")
         print("=" * 60)
-        has_session = await self.check_session()
         
-        if has_session:
-            print("✅ Valid session - auto-login will occur")
+        if self.use_saved_session:
+            has_session = await self.check_session()
+            if has_session:
+                print("✅ Valid session - auto-login will occur")
+            else:
+                print("📱 No valid session - QR code will be shown")
         else:
-            print("📱 No valid session - QR code will be shown")
-            print("   Open WhatsApp on your phone")
-            print("   Tap ⋮ → Linked Devices → Link a Device")
-            print("   Scan the QR code in the browser")
-            print(f"   ⏳ Will wait up to {QR_REFRESH_DELAY}s before refreshing")
+            print("📱 FRESH SESSION MODE - QR code will be shown each time")
+            print("   This is more reliable for group messaging!")
         
+        print("   Open WhatsApp on your phone")
+        print("   Tap ⋮ → Linked Devices → Link a Device")
+        print("   Scan the QR code in the browser")
+        print(f"   ⏳ Will wait up to {QR_REFRESH_DELAY}s before refreshing")
         print("=" * 60 + "\n")
-        return has_session
+        return False  # Always return False to force QR scan
+    
+    # ============================================================
+    # BROWSER LAUNCH - IMPROVED
+    # ============================================================
+    
+    async def launch_browser(self):
+        """Launch browser with FRESH context (no saved state)"""
+        try:
+            self.playwright = await async_playwright().start()
+            
+            # ============================================================
+            # OPTION 1: FRESH CONTEXT (RECOMMENDED - MOST RELIABLE)
+            # ============================================================
+            if not self.use_saved_session:
+                print("🚀 Launching fresh browser (no saved session)")
+                
+                # Delete any old session file to be safe
+                if SESSION_FILE.exists():
+                    try:
+                        SESSION_FILE.unlink()
+                        print(f"   🗑️ Removed old session file: {SESSION_FILE}")
+                    except:
+                        pass
+                
+                self.browser = await self.playwright.chromium.launch(
+                    headless=False,
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-dev-shm-usage',
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-features=PreloadMediaEngagementData',
+                        '--disable-features=AutomaticTabDiscarding',
+                        '--disable-background-timer-throttling',
+                        '--disable-backgrounding-occluded-windows',
+                        '--disable-renderer-backgrounding',
+                    ]
+                )
+                
+                self.context = await self.browser.new_context(
+                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    viewport={'width': 1280, 'height': 720},
+                    # NO STORAGE STATE - FRESH SESSION
+                )
+                
+                self.page = await self.context.new_page()
+                
+                # Anti-detection
+                await self.page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                    });
+                """)
+                
+                return True
+            
+            # ============================================================
+            # OPTION 2: PERSISTENT CONTEXT (NOT RECOMMENDED)
+            # ============================================================
+            else:
+                print("🚀 Launching browser with persistent context (SAVED SESSION)")
+                print("   ⚠️ This may cause issues with group messaging!")
+                
+                self.context = await self.playwright.chromium.launch_persistent_context(
+                    user_data_dir="./whatsapp_session",
+                    headless=False,
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-dev-shm-usage',
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-features=PreloadMediaEngagementData',
+                        '--disable-features=AutomaticTabDiscarding',
+                        '--disable-background-timer-throttling',
+                        '--disable-backgrounding-occluded-windows',
+                        '--disable-renderer-backgrounding',
+                    ],
+                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    viewport={'width': 1280, 'height': 720}
+                )
+                
+                if self.context.pages:
+                    self.page = self.context.pages[0]
+                else:
+                    self.page = await self.context.new_page()
+                
+                await self.page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                    });
+                """)
+                
+                return True
+            
+        except Exception as e:
+            print(f"❌ Error launching browser: {e}")
+            return False
+    
+    # ============================================================
+    # SESSION SAVING - ONLY FOR PERSISTENT MODE
+    # ============================================================
     
     async def save_session_state(self):
-        """Save session state properly"""
+        """Save session state - ONLY if using persistent context"""
+        if not self.use_saved_session:
+            print("💡 Fresh session mode - session not saved")
+            return True
+            
         try:
             if not self.context:
                 return False
@@ -118,80 +239,16 @@ class LoginManager:
             print(f"⚠️ Could not save session: {e}")
             return False
     
-    async def delete_corrupted_session(self):
-        """Delete corrupted session folder and file"""
-        print("🗑️ Deleting corrupted session...")
-        try:
-            if SESSION_DIR.exists():
-                shutil.rmtree(SESSION_DIR)
-                print(f"   ✅ Deleted: {SESSION_DIR}")
-            
-            if SESSION_FILE.exists():
-                SESSION_FILE.unlink()
-                print(f"   ✅ Deleted: {SESSION_FILE}")
-            
-            SESSION_DIR.mkdir(exist_ok=True)
-            print("   ✅ Recreated session directory")
-            
-            self.qr_shown_after_valid_session = False
-            return True
-        except Exception as e:
-            print(f"   ❌ Error deleting session: {e}")
-            return False
-    
     # ============================================================
-    # BROWSER LAUNCH
-    # ============================================================
-    
-    async def launch_browser(self):
-        """Launch browser with persistent context"""
-        try:
-            self.playwright = await async_playwright().start()
-            
-            self.context = await self.playwright.chromium.launch_persistent_context(
-                user_data_dir="./whatsapp_session",
-                headless=False,
-                args=[
-                    '--disable-blink-features=AutomationControlled',
-                    '--disable-dev-shm-usage',
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-features=PreloadMediaEngagementData',
-                    '--disable-features=AutomaticTabDiscarding',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding',
-                ],
-                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                viewport={'width': 1280, 'height': 720}
-            )
-            
-            if self.context.pages:
-                self.page = self.context.pages[0]
-            else:
-                self.page = await self.context.new_page()
-            
-            await self.page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined
-                });
-            """)
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ Error launching browser: {e}")
-            return False
-    
-    # ============================================================
-    # LOGIN WITH RETRY & CORRUPTION DETECTION
+    # LOGIN WITH RETRY
     # ============================================================
     
     async def login(self) -> bool:
-        """Complete login process with 5 retries and 1 minute between retries"""
+        """Complete login process with fresh session"""
         print("=" * 60)
         print("🚀 WhatsApp Bot Login")
         print("=" * 60)
+        print(f"📋 Mode: {'FRESH SESSION' if not self.use_saved_session else 'SAVED SESSION'}")
         print(f"📋 Max attempts: {MAX_LOGIN_ATTEMPTS}")
         print(f"⏳ Retry delay: {RETRY_DELAY}s between attempts")
         print(f"🔄 Page refresh: After {QR_REFRESH_DELAY}s if no QR")
@@ -228,10 +285,6 @@ class LoginManager:
                 else:
                     print(f"❌ Login attempt {attempt_num} failed")
                     
-                    if self.qr_shown_after_valid_session:
-                        print("⚠️ QR shown despite having a valid session. Session may be corrupted.")
-                        await self.delete_corrupted_session()
-                    
                     if attempt_num < MAX_LOGIN_ATTEMPTS:
                         print(f"⏳ Waiting {RETRY_DELAY}s before retry...")
                         await self.cleanup()
@@ -248,10 +301,7 @@ class LoginManager:
         return False
     
     async def _wait_for_login(self, timeout=300):
-        """
-        Wait for login - show QR if needed
-        Waits up to 4 minutes (240s) before refreshing the page
-        """
+        """Wait for login - show QR if needed"""
         print("🔍 Looking for QR code...")
         print("   Open WhatsApp → Linked Devices → Link a Device")
         print(f"   ⏳ Will wait {QR_REFRESH_DELAY}s before refreshing")
@@ -298,11 +348,6 @@ class LoginManager:
                                 if is_visible:
                                     print("📱 QR CODE FOUND! Scan with your phone")
                                     qr_shown = True
-                                    
-                                    if await self.check_session():
-                                        self.qr_shown_after_valid_session = True
-                                        print("   ⚠️ QR shown despite valid session - session may be corrupted")
-                                    
                                     break
                         except:
                             continue
@@ -317,7 +362,7 @@ class LoginManager:
                     else:
                         print(f"⏳ Waiting for scan... ({elapsed}s elapsed, {remaining}s remaining)")
                 
-                # Refresh after 4 minutes (240 seconds) if no QR and not logged in
+                # Refresh after 4 minutes if no QR
                 if not qr_shown and elapsed >= QR_REFRESH_DELAY:
                     if current_time - last_refresh >= QR_REFRESH_DELAY:
                         print(f"🔄 No QR detected after {QR_REFRESH_DELAY}s, refreshing page...")
