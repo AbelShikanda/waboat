@@ -11,11 +11,12 @@ Strategically markets group links to other groups.
 - Avoids posting core links to core groups
 - Scans groups for new links when entering
 - Auto-resets when all groups have been posted to
+- EXHAUSTIVE CONNECTION MONITORING: CHECKS EVERY CRITICAL STEP
 
 FLOW: Open target group → Post link → Scan for new links → Store → Next
 
 USAGE: This module does NOT handle its own login.
-       It receives page and context from the main bot.
+       It receives page, context, and login_manager from the main bot.
 """
 
 import json
@@ -65,6 +66,9 @@ SCROLL_COUNT = 10
 
 # Maximum scrolls per group (safety limit to prevent infinite loops)
 MAX_SCROLL_LIMIT = 50
+
+# Connection check interval during long operations
+CONNECTION_CHECK_INTERVAL = 30
 
 # ============================================================
 # DELAY CONFIGURATION
@@ -373,27 +377,293 @@ class PostedLinksManager:
 
 
 # ============================================================
-# GROUP LINK MARKETER CLASS
+# GROUP LINK MARKETER CLASS - EXHAUSTIVE CONNECTION MONITORING
 # ============================================================
 
 class GroupLinkMarketer:
     """
     Strategically markets group links to other groups.
     
-    NOTE: This class receives page and context from the main bot.
+    EXHAUSTIVE CONNECTION MONITORING:
+    - Checks connection at EVERY critical step
+    - Pauses ALL activity when disconnected
+    - Resumes automatically when reconnected
+    - Background health monitor for proactive detection
+    
+    NOTE: This class receives page, context, and login_manager from the main bot.
           It does NOT handle its own login.
     """
     
-    def __init__(self, scroll_count: int = SCROLL_COUNT):
+    def __init__(self, scroll_count: int = SCROLL_COUNT, login_manager=None):
+        """
+        Initialize GroupLinkMarketer
+        
+        Args:
+            scroll_count: Number of scrolls when scanning for links
+            login_manager: LoginManager instance for connection monitoring
+        """
         self.page = None
         self.context = None
+        self.login_manager = login_manager
+        
+        # Validate login_manager
+        if login_manager:
+            print("✅ Connection monitoring ENABLED - exhaustive checks active")
+        else:
+            print("⚠️ No login manager - connection monitoring DISABLED")
+            print("   The bot will NOT pause on disconnection!")
+        
         self.scroll_count = scroll_count
         self.group_links = self._load_group_links()
         self.new_group_links = self._load_new_links()
         self.posted_manager = PostedLinksManager(max_groups_per_source=3)
+        self.is_paused = False
+        self.is_running = False
+        
+        # Connection monitoring stats
+        self.connection_stats = {
+            "checks_performed": 0,
+            "disconnections_detected": 0,
+            "reconnections_succeeded": 0,
+            "operations_paused": 0
+        }
+        
+        # Track connection check counter for periodic checks during loops
+        self._connection_check_counter = 0
     
     # ============================================================
-    # DATA LOADING
+    # EXHAUSTIVE CONNECTION MONITORING METHODS
+    # ============================================================
+    
+    async def ensure_connection(self, context: str = "unknown") -> bool:
+        """
+        EXHAUSTIVE connection check - PAUSES ALL ACTIVITY if disconnected.
+        
+        Args:
+            context: Description of where the check is being called from
+            
+        Returns:
+            bool: True if connected, False if not (but will wait for reconnection)
+        """
+        self._connection_check_counter += 1
+        self.connection_stats["checks_performed"] += 1
+        
+        if not self.login_manager:
+            return True  # No login manager, assume connected
+        
+        try:
+            is_connected = await self.login_manager.check_connection()
+            
+            if is_connected:
+                # If we were paused, clear the flag
+                if self.is_paused:
+                    self.is_paused = False
+                    print(f"✅ Connection restored (checked from: {context})")
+                return True
+            
+            # DISCONNECTED - PAUSE ALL ACTIVITY
+            self.is_paused = True
+            self.connection_stats["disconnections_detected"] += 1
+            self.connection_stats["operations_paused"] += 1
+            
+            print("\n" + "=" * 70)
+            print(f"⏸️  CONNECTION LOST - PAUSING ALL ACTIVITY")
+            print(f"   Location: {context}")
+            print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+            print("=" * 70)
+            print("   WhatsApp connection lost. Waiting for reconnection...")
+            print("   All marketing operations are on hold.")
+            print("   Will check every 5 seconds...")
+            print("=" * 70 + "\n")
+            
+            # Wait indefinitely until reconnected
+            reconnected = await self.login_manager.wait_for_connection()
+            
+            if reconnected:
+                self.is_paused = False
+                self.connection_stats["reconnections_succeeded"] += 1
+                
+                print("\n" + "=" * 70)
+                print("▶️  CONNECTION RESTORED - RESUMING ACTIVITY")
+                print(f"   Location: {context}")
+                print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+                print("=" * 70)
+                print("   WhatsApp reconnected successfully!")
+                print("   Resuming marketing operations...")
+                print("=" * 70 + "\n")
+                
+                # Small delay to let WhatsApp stabilize
+                await asyncio.sleep(2)
+                return True
+            
+            # If wait_for_connection returns False (shouldn't happen with indefinite wait)
+            print("❌ Failed to reconnect after waiting")
+            return False
+            
+        except Exception as e:
+            print(f"⚠️ Connection check error at {context}: {e}")
+            # If we can't check, assume we're connected to avoid false positives
+            return True
+    
+    async def check_connection_before_operation(self, operation_name: str) -> bool:
+        """
+        Convenience method to check connection before any operation.
+        
+        Args:
+            operation_name: Name of the operation being performed
+            
+        Returns:
+            bool: True if safe to proceed, False if should abort
+        """
+        if not self.login_manager:
+            return True
+        
+        is_connected = await self.ensure_connection(f"Before: {operation_name}")
+        
+        if not is_connected:
+            print(f"⚠️ Cannot perform '{operation_name}' - no connection")
+            return False
+        
+        # Additional quick check - ensure page is responsive
+        try:
+            # Try to find any element to verify page is responsive
+            await self.page.wait_for_timeout(100)  # Very short timeout
+        except:
+            # Page might be frozen
+            print(f"⚠️ Page seems unresponsive before '{operation_name}'")
+            # Try to recover by checking connection again
+            return await self.ensure_connection(f"Recovery check: {operation_name}")
+        
+        return True
+    
+    async def wait_if_paused(self, context: str = "general") -> bool:
+        """
+        EXHAUSTIVE: Check if paused and wait if needed.
+        Used between operations to ensure we don't continue if disconnected.
+        
+        Args:
+            context: Description of where this is being called
+            
+        Returns:
+            bool: True if safe to proceed, False if should abort
+        """
+        if self.is_paused:
+            print(f"⏳ Bot is paused (waiting for reconnection)... [{context}]")
+            
+            if not self.login_manager:
+                print("⚠️ No login manager but paused flag is set - clearing")
+                self.is_paused = False
+                return True
+            
+            await self.login_manager.wait_for_connection()
+            self.is_paused = False
+            print(f"▶️ Bot resumed! [{context}]")
+            
+            # Wait a moment for stability
+            await asyncio.sleep(1)
+        
+        # Always do a fresh check if we have a login manager
+        if self.login_manager:
+            return await self.ensure_connection(f"wait_if_paused: {context}")
+        
+        return True
+    
+    async def safe_operation(self, operation_name: str, operation_func, *args, **kwargs):
+        """
+        Wrapper to safely execute an operation with connection checking.
+        
+        Args:
+            operation_name: Name of the operation (for logging)
+            operation_func: Async function to execute
+            *args, **kwargs: Arguments to pass to the function
+            
+        Returns:
+            The result of the operation, or None if connection failed
+        """
+        # Check connection before operation
+        if not await self.check_connection_before_operation(operation_name):
+            return None
+        
+        try:
+            # Execute the operation
+            result = await operation_func(*args, **kwargs)
+            
+            # Check connection after operation
+            if not await self.ensure_connection(f"After: {operation_name}"):
+                return None
+            
+            return result
+            
+        except Exception as e:
+            print(f"⚠️ Error during {operation_name}: {e}")
+            # Check if error was due to connection issues
+            if self.login_manager:
+                is_connected = await self.ensure_connection(f"Error recovery: {operation_name}")
+                if not is_connected:
+                    return None
+            # Re-raise if not a connection issue
+            raise
+    
+    # ============================================================
+    # BACKGROUND HEALTH MONITOR
+    # ============================================================
+    
+    async def connection_health_monitor(self):
+        """
+        Background task that periodically checks connection health.
+        Runs in the background while other operations are ongoing.
+        """
+        print("🔄 Connection health monitor started for GroupLinkMarketer")
+        
+        while self.is_running:
+            await asyncio.sleep(CONNECTION_CHECK_INTERVAL)
+            
+            if not self.login_manager:
+                continue
+            
+            try:
+                # Quick connection check
+                is_connected = await self.login_manager.check_connection()
+                
+                if not is_connected and not self.is_paused:
+                    # Disconnection detected by background monitor
+                    print("\n⚠️ Background monitor detected disconnection!")
+                    self.is_paused = True
+                    self.connection_stats["disconnections_detected"] += 1
+                    self.connection_stats["operations_paused"] += 1
+                    
+                    print("⏳ Waiting for reconnection...")
+                    await self.login_manager.wait_for_connection()
+                    
+                    self.is_paused = False
+                    self.connection_stats["reconnections_succeeded"] += 1
+                    print("✅ Background monitor: Connection restored!")
+                    
+            except Exception as e:
+                print(f"⚠️ Background monitor error: {e}")
+    
+    # ============================================================
+    # START/STOP METHODS
+    # ============================================================
+    
+    async def start(self):
+        """Start the marketer with connection monitoring"""
+        self.is_running = True
+        
+        # Start background health monitor
+        asyncio.create_task(self.connection_health_monitor())
+        
+        print("✅ Group Link Marketer started with EXHAUSTIVE connection monitoring")
+        print(f"   Connection checks at EVERY critical step")
+        print(f"   Health monitor running every {CONNECTION_CHECK_INTERVAL}s")
+    
+    async def stop(self):
+        """Stop the marketer"""
+        self.is_running = False
+        print("🛑 Group Link Marketer stopped")
+    
+    # ============================================================
+    # DATA LOADING - WITH CONNECTION CHECKS
     # ============================================================
     
     def _load_group_links(self) -> dict:
@@ -430,8 +700,28 @@ class GroupLinkMarketer:
         
         return False
     
+    async def _save_new_links_with_connection_check(self):
+        """Save new links to file with connection check"""
+        # CONNECTION CHECK: Before file operation
+        if not await self.ensure_connection("_save_new_links"):
+            print("⚠️ Connection lost during save. Will retry...")
+            if not await self.ensure_connection("_save_new_links_retry"):
+                print("❌ Cannot save new links - no connection")
+                return False
+        
+        self.new_group_links["total_groups"] = len(self.new_group_links.get("groups", []))
+        self.new_group_links["last_updated"] = datetime.now().isoformat()
+        
+        try:
+            with open(NEW_GROUP_LINKS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.new_group_links, f, indent=2, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"❌ Error saving new links: {e}")
+            return False
+    
     def _save_new_links(self):
-        """Save new links to file"""
+        """Save new links to file (synchronous version, kept for compatibility)"""
         self.new_group_links["total_groups"] = len(self.new_group_links.get("groups", []))
         self.new_group_links["last_updated"] = datetime.now().isoformat()
         
@@ -439,14 +729,24 @@ class GroupLinkMarketer:
             json.dump(self.new_group_links, f, indent=2, ensure_ascii=False)
     
     # ============================================================
-    # OPEN GROUP
+    # OPEN GROUP - WITH EXHAUSTIVE CONNECTION CHECKS
     # ============================================================
     
     async def _open_group(self, group_name: str) -> bool:
-        """Open a group"""
+        """Open a group with EXHAUSTIVE connection checks at EVERY step"""
+        
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection(f"_open_group_start_{group_name}"):
+            print("❌ WhatsApp not connected. Cannot open group.")
+            return False
+        
         print(f"    🔍 Opening: {group_name}")
         
         try:
+            # CONNECTION CHECK: Before search
+            if not await self.ensure_connection(f"_open_group_search_{group_name}"):
+                return False
+            
             # Click search
             search_selectors = [
                 'div[data-testid="chat-list-search"]',
@@ -456,6 +756,10 @@ class GroupLinkMarketer:
             
             search_clicked = False
             for selector in search_selectors:
+                # CONNECTION CHECK: During selector iteration
+                if not await self.ensure_connection(f"_open_group_search_selector_{selector[:20]}"):
+                    continue
+                
                 try:
                     search = await self.page.query_selector(selector)
                     if search:
@@ -470,6 +774,10 @@ class GroupLinkMarketer:
                 await self.page.keyboard.press('Control+Shift+J')
                 await asyncio.sleep(DELAYS["short"])
             
+            # CONNECTION CHECK: After search
+            if not await self.ensure_connection(f"_open_group_after_search_{group_name}"):
+                return False
+            
             # Type group name
             input_selectors = [
                 'input[type="text"]',
@@ -477,6 +785,10 @@ class GroupLinkMarketer:
             ]
             
             for selector in input_selectors:
+                # CONNECTION CHECK: During typing
+                if not await self.ensure_connection(f"_open_group_typing_{group_name}"):
+                    continue
+                
                 try:
                     search_input = await self.page.query_selector(selector)
                     if search_input:
@@ -489,6 +801,10 @@ class GroupLinkMarketer:
                 except:
                     continue
             
+            # CONNECTION CHECK: After typing
+            if not await self.ensure_connection(f"_open_group_after_typing_{group_name}"):
+                return False
+            
             # Click group
             group_selectors = [
                 f'div[role="row"]:has-text("{group_name}")',
@@ -497,6 +813,10 @@ class GroupLinkMarketer:
             
             group_found = False
             for selector in group_selectors:
+                # CONNECTION CHECK: During group finding
+                if not await self.ensure_connection(f"_open_group_finding_{group_name}"):
+                    continue
+                
                 try:
                     group = await self.page.query_selector(selector)
                     if group:
@@ -512,6 +832,11 @@ class GroupLinkMarketer:
                 # Try scanning all chats
                 chats = await self.page.query_selector_all('div[role="row"]')
                 for chat in chats:
+                    # CONNECTION CHECK: During chat scanning
+                    if self._connection_check_counter % 5 == 0:
+                        if not await self.ensure_connection(f"_open_group_scanning_{group_name}"):
+                            break
+                    
                     try:
                         text = await chat.inner_text()
                         if group_name.lower() in text.lower():
@@ -525,6 +850,10 @@ class GroupLinkMarketer:
                 print(f"    ❌ Group not found: {group_name}")
                 return False
             
+            # CONNECTION CHECK: Before returning
+            if not await self.ensure_connection(f"_open_group_complete_{group_name}"):
+                return False
+            
             return True
             
         except Exception as e:
@@ -532,13 +861,20 @@ class GroupLinkMarketer:
             return False
     
     # ============================================================
-    # SCAN GROUP FOR NEW LINKS (WITH CONFIGURABLE SCROLL)
+    # SCAN GROUP FOR NEW LINKS - WITH EXHAUSTIVE CONNECTION CHECKS
     # ============================================================
     
     async def _scan_group_for_new_links(self, group_name: str) -> List[str]:
         """
-        Scan a group for new links - scrolls up with balanced timing.
+        Scan a group for new links - EXHAUSTIVE connection checking.
+        Checks connection BEFORE, DURING, and AFTER every scroll.
         """
+        
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection(f"_scan_group_start_{group_name}"):
+            print("❌ WhatsApp not connected. Cannot scan for links.")
+            return []
+        
         new_links = []
         found_links = set()
         
@@ -555,6 +891,17 @@ class GroupLinkMarketer:
             no_change_count = 0
             
             for scroll_count in range(1, self.scroll_count + 1):
+                # ============================================================
+                # CONNECTION CHECK: Before EACH scroll (EXHAUSTIVE)
+                # ============================================================
+                if not await self.ensure_connection(f"_scan_group_scroll_{scroll_count}_{group_name}"):
+                    print("⏳ Connection lost during scan. Waiting for reconnection...")
+                    # ensure_connection will wait until reconnected
+                    await self.ensure_connection(f"_scan_group_reconnect_{scroll_count}_{group_name}")
+                    print("✅ Connection restored. Resuming scan...")
+                    # Continue to next scroll after reconnection
+                    continue
+                
                 # ============================================================
                 # STEP 1: SCROLL UP (multiple methods)
                 # ============================================================
@@ -588,8 +935,13 @@ class GroupLinkMarketer:
                 # ============================================================
                 # STEP 2: BRIEF WAIT FOR MESSAGES TO LOAD
                 # ============================================================
-                # Just enough time for WhatsApp to load messages
                 await asyncio.sleep(0.8)  # 0.8 seconds per scroll
+                
+                # ============================================================
+                # CONNECTION CHECK: After scrolling
+                # ============================================================
+                if not await self.ensure_connection(f"_scan_group_after_scroll_{scroll_count}_{group_name}"):
+                    continue
                 
                 # ============================================================
                 # STEP 3: CHECK IF NEW MESSAGES LOADED
@@ -614,11 +966,20 @@ class GroupLinkMarketer:
             # ============================================================
             # STEP 4: SCAN ALL MESSAGES
             # ============================================================
+            # CONNECTION CHECK: Before scanning messages
+            if not await self.ensure_connection(f"_scan_group_extract_{group_name}"):
+                return new_links
+            
             print(f"        🔍 Scanning {current_count} messages for links...")
             
             messages = await self.page.query_selector_all('div[data-testid="message-container"]')
             
-            for msg in messages:
+            for msg_index, msg in enumerate(messages):
+                # CONNECTION CHECK: During message extraction (every 10 messages)
+                if msg_index % 10 == 0:
+                    if not await self.ensure_connection(f"_scan_group_message_{msg_index}_{group_name}"):
+                        break
+                
                 try:
                     text = await msg.text_content()
                     if text and "whatsapp.com" in text:
@@ -626,12 +987,20 @@ class GroupLinkMarketer:
                         if link_match:
                             link = link_match.group(0)
                             
+                            # CONNECTION CHECK: Before checking if link exists
+                            if not await self.ensure_connection(f"_scan_group_check_link_{group_name}"):
+                                break
+                            
                             if not self._link_exists_in_system(link) and link not in found_links:
                                 found_links.add(link)
                                 new_links.append(link)
                                 print(f"        ✅ Found new link: {link[:50]}...")
                 except:
                     continue
+            
+            # CONNECTION CHECK: Before returning
+            if not await self.ensure_connection(f"_scan_group_complete_{group_name}"):
+                return new_links
             
             print(f"        📊 Found {len(new_links)} new links in {group_name}")
             return new_links
@@ -641,11 +1010,63 @@ class GroupLinkMarketer:
             return new_links
     
     # ============================================================
-    # STORE NEW LINKS
+    # STORE NEW LINKS - WITH CONNECTION CHECKS
     # ============================================================
     
+    async def _store_new_links_with_connection_check(self, group_name: str, new_links: List[str], category: str = "general"):
+        """
+        Store new links found in a group with EXHAUSTIVE connection checking.
+        """
+        # CONNECTION CHECK: Before storing
+        if not await self.ensure_connection(f"_store_new_links_start_{group_name}"):
+            print("⚠️ Connection lost. Cannot store new links.")
+            return
+        
+        if not new_links:
+            return
+        
+        print(f"    💾 Storing {len(new_links)} new link(s) from {group_name} in new_group_links.json")
+        
+        for link_index, link in enumerate(new_links):
+            # CONNECTION CHECK: During link processing (every 5 links)
+            if link_index % 5 == 0:
+                if not await self.ensure_connection(f"_store_new_links_process_{link_index}_{group_name}"):
+                    print("⚠️ Connection lost during link storage. Will continue next time.")
+                    break
+            
+            # Check if link already exists (avoid duplicates)
+            if self._link_exists_in_system(link):
+                print(f"        ⏭️ Link already exists: {link[:40]}...")
+                continue
+            
+            # Add to new_group_links.json
+            self.new_group_links["groups"].append({
+                "name": f"Found in {group_name}",
+                "url": link,
+                "category": category,
+                "status": "pending",
+                "source_group": group_name,
+                "discovered_at": datetime.now().isoformat(),
+                "description": f"Auto-discovered link from {group_name}",
+                "posted_date": None,
+                "posted_time": None,
+                "last_updated": datetime.now().isoformat()
+            })
+            
+            print(f"        ✅ Stored new link: {link[:40]}...")
+        
+        # CONNECTION CHECK: Before saving to file
+        if not await self.ensure_connection(f"_store_new_links_save_{group_name}"):
+            print("⚠️ Connection lost before saving. Will try to save anyway...")
+        
+        # Save the updated data
+        await self._save_new_links_with_connection_check()
+    
     def _store_new_links(self, group_name: str, new_links: List[str], category: str = "general"):
-        """Store new links found in a group to new_group_links.json"""
+        """
+        Store new links found in a group (synchronous version, kept for compatibility).
+        NOTE: Use _store_new_links_with_connection_check instead.
+        """
         if not new_links:
             return
         
@@ -677,19 +1098,28 @@ class GroupLinkMarketer:
         self._save_new_links()
     
     # ============================================================
-    # SEND LINK TO GROUP (WITH WORKING SELECTORS)
+    # SEND LINK TO GROUP - WITH EXHAUSTIVE CONNECTION CHECKS
     # ============================================================
     
     async def send_link_to_group(self, source_group: str, target_group: str, 
-                                  link: str, message: str) -> bool:
+                              link: str, message: str) -> bool:
         """
-        Send a group link to another group
-        Uses working compose box selectors from group_poster.py
+        Send a group link to another group with EXHAUSTIVE connection checking.
+        Checks connection at EVERY critical step.
         """
+        
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection(f"send_link_start_{source_group}_{target_group}"):
+            print("❌ WhatsApp not connected. Cannot send link.")
+            return False
+        
         print(f"\n    📤 Posting link to: {target_group}")
         
         try:
-            # Find compose box using working selectors
+            # CONNECTION CHECK: Before finding compose box
+            if not await self.ensure_connection(f"send_link_compose_{target_group}"):
+                return False
+            
             print(f"    🔍 Finding compose box...")
             
             compose_selectors = [
@@ -704,6 +1134,14 @@ class GroupLinkMarketer:
             
             compose = None
             for attempt in range(3):
+                # CONNECTION CHECK: During compose box attempts
+                if not await self.ensure_connection(f"send_link_compose_attempt_{attempt}_{target_group}"):
+                    print("⏳ Connection lost. Waiting for reconnection...")
+                    await self.ensure_connection(f"send_link_compose_reconnect_{attempt}_{target_group}")
+                    print("✅ Connection restored. Resuming...")
+                    # Don't increment attempt count, just continue
+                    continue
+                
                 for selector in compose_selectors:
                     try:
                         compose = await self.page.query_selector(selector)
@@ -725,6 +1163,10 @@ class GroupLinkMarketer:
                 print(f"    ❌ Compose box not found")
                 return False
             
+            # CONNECTION CHECK: Before typing
+            if not await self.ensure_connection(f"send_link_before_typing_{target_group}"):
+                return False
+            
             # Click and clear
             await compose.click()
             await asyncio.sleep(DELAYS["short"])
@@ -736,6 +1178,15 @@ class GroupLinkMarketer:
             lines = message.split('\n')
             
             for line_index, line in enumerate(lines):
+                # CONNECTION CHECK: During typing (every few lines)
+                if line_index % 3 == 0:
+                    if not await self.ensure_connection(f"send_link_typing_line_{line_index}_{target_group}"):
+                        print("⚠️ Connection lost during typing. Waiting...")
+                        await self.ensure_connection(f"send_link_typing_reconnect_{line_index}_{target_group}")
+                        print("✅ Connection restored. Continuing typing...")
+                        # Continue with typing
+                        continue
+                
                 for char in line:
                     await compose.type(char, delay=random.randint(40, 100))
                     if random.random() < 0.02:
@@ -748,8 +1199,12 @@ class GroupLinkMarketer:
             await asyncio.sleep(DELAYS["medium"])
             print(f"    ✅ Message typed with {len(lines)} lines")
             
+            # CONNECTION CHECK: After typing
+            if not await self.ensure_connection(f"send_link_after_typing_{target_group}"):
+                return False
+            
             # ============================================================
-            # SMART LINK PREVIEW DETECTION
+            # SMART LINK PREVIEW DETECTION with connection checks
             # ============================================================
             if "http" in message or "www." in message:
                 print(f"    ⏳ Waiting for link preview to load...")
@@ -757,6 +1212,15 @@ class GroupLinkMarketer:
                 preview_loaded = False
                 
                 for attempt in range(5):  # Max 5 seconds
+                    # CONNECTION CHECK: During preview wait
+                    if attempt % 2 == 0:  # Check every 2 seconds
+                        if not await self.ensure_connection(f"send_link_preview_{attempt}_{target_group}"):
+                            print("⏳ Connection lost during preview wait. Waiting for reconnection...")
+                            await self.ensure_connection(f"send_link_preview_reconnect_{attempt}_{target_group}")
+                            print("✅ Connection restored. Resuming preview wait...")
+                            # Don't increment attempt count, just continue
+                            continue
+                    
                     await asyncio.sleep(1)
                     
                     try:
@@ -790,33 +1254,33 @@ class GroupLinkMarketer:
                     print(f"    ⚠️ Link preview didn't appear, proceeding anyway...")
             
             # ============================================================
-            # SEND WITH WORKING SELECTOR
+            # SEND WITH ENTER KEY - WITH CONNECTION CHECK
             # ============================================================
-            print(f"    🔍 Finding send button...")
+            # CONNECTION CHECK: Before sending
+            if not await self.ensure_connection(f"send_link_before_send_{target_group}"):
+                print("⏳ Connection lost before sending. Waiting for reconnection...")
+                await self.ensure_connection(f"send_link_before_send_reconnect_{target_group}")
+                print("✅ Connection restored. Resuming send...")
             
-            send_selectors = [
-                'button[data-testid="compose-btn-send"]',
-                'button[aria-label="Send"]',
-                'button[type="submit"]'
-            ]
+            print(f"    📤 Sending message...")
             
-            send = None
-            for selector in send_selectors:
-                try:
-                    send = await self.page.query_selector(selector)
-                    if send:
-                        print(f"    ✅ Send button found: {selector}")
-                        break
-                except:
-                    continue
-            
-            if not send:
-                print(f"    ❌ Send button not found")
-                return False
-            
-            await send.click()
+            # Use Enter key to send (more reliable)
+            await self.page.keyboard.press('Enter')
             await asyncio.sleep(DELAYS["long"])
+            
+            # CONNECTION CHECK: After sending
+            if not await self.ensure_connection(f"send_link_after_send_{target_group}"):
+                print("⚠️ Connection lost after sending. Checking if message was sent...")
+                # We still want to mark as posted if message was sent
+            
             print(f"    ✅ Link posted to {target_group}")
+            
+            # CONNECTION CHECK: Before marking as posted
+            if not await self.ensure_connection(f"send_link_mark_posted_{target_group}"):
+                print("⚠️ Connection lost before marking as posted. Will save locally.")
+                # Still try to mark as posted
+                self.posted_manager.mark_posted(source_group, target_group, link)
+                return True
             
             # Mark as posted
             self.posted_manager.mark_posted(source_group, target_group, link)
@@ -824,21 +1288,36 @@ class GroupLinkMarketer:
                 
         except Exception as e:
             print(f"    ❌ Error posting to {target_group}: {e}")
+            
+            # Try to mark as posted even on error (if it might have been sent)
+            try:
+                # Check if message might have been sent
+                last_msg = await self.page.query_selector('div[data-testid="msg-container"]:last-child')
+                if last_msg:
+                    is_own = await last_msg.query_selector('div[data-testid="msg-own"]')
+                    if is_own:
+                        print("    ⚠️ Message might have been sent despite error. Marking as posted.")
+                        self.posted_manager.mark_posted(source_group, target_group, link)
+                        return True
+            except:
+                pass
+            
             return False
     
     # ============================================================
-    # STRATEGIC MARKETING (WITH AUTO-RESET)
+    # STRATEGIC MARKETING - WITH EXHAUSTIVE CONNECTION CHECKS
     # ============================================================
     
     async def market_group_links(self, group_filter: str = "core"):
         """
-        Strategically market group links to other groups.
-        FLOW: Open group → Post link → Scan for new links → Store → Next
-        Auto-resets when all groups have been posted to.
-        
-        Args:
-            group_filter: 'core', 'all', or specific category
+        Strategically market group links to other groups with EXHAUSTIVE connection checking.
+        Checks connection at EVERY critical step.
         """
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection("market_group_links_start"):
+            print("❌ WhatsApp not connected. Cannot start marketing.")
+            return
+        
         print("\n" + "=" * 60)
         print("📢 MARKETING GROUP LINKS")
         print("=" * 60)
@@ -890,7 +1369,12 @@ class GroupLinkMarketer:
         new_links_found = 0
         total_reset_entries = 0
         
-        for source in source_groups:
+        for source_index, source in enumerate(source_groups):
+            # CONNECTION CHECK: Before each source group
+            if not await self.ensure_connection(f"market_group_links_source_{source_index}_{source.get('name')}"):
+                print("❌ Connection lost. Stopping marketing.")
+                break
+            
             source_group = source["name"]
             link = source["url"]
             category = source["category"]
@@ -963,7 +1447,12 @@ class GroupLinkMarketer:
             message = get_message_template(category, source_group, link, description)
             
             # Process each target group (limit to 3 per source)
-            for target_group in filtered_targets[:3]:
+            for target_index, target_group in enumerate(filtered_targets[:3]):
+                # CONNECTION CHECK: Before each target group
+                if not await self.ensure_connection(f"market_group_links_target_{source_index}_{target_index}_{target_group}"):
+                    print("❌ Connection lost. Stopping marketing.")
+                    break
+                
                 print(f"\n{'='*50}")
                 print(f"📌 Processing target: {target_group}")
                 print(f"{'='*50}")
@@ -978,9 +1467,23 @@ class GroupLinkMarketer:
                     continue
                 
                 # ============================================================
+                # CONNECTION CHECK: After opening group
+                # ============================================================
+                if not await self.ensure_connection(f"market_group_links_after_open_{target_group}"):
+                    print("⚠️ Connection lost after opening. Skipping...")
+                    failed += 1
+                    continue
+                
+                # ============================================================
                 # STEP 2: POST/MARKET THE LINK FIRST
                 # ============================================================
                 print(f"\n    📤 Posting link to {target_group}...")
+                
+                # CONNECTION CHECK: Before posting
+                if not await self.ensure_connection(f"market_group_links_before_post_{target_group}"):
+                    print("⚠️ Connection lost before posting. Skipping...")
+                    failed += 1
+                    continue
                 
                 # Double-check not already posted (race condition check)
                 if self.posted_manager.is_already_posted(source_group, target_group):
@@ -995,12 +1498,25 @@ class GroupLinkMarketer:
                     message
                 )
                 
+                # CONNECTION CHECK: After posting
+                if not await self.ensure_connection(f"market_group_links_after_post_{target_group}"):
+                    print("⚠️ Connection lost after posting. Checking status...")
+                    # We'll still continue to scan if possible
+                
                 if success:
                     successful += 1
                     print(f"    ✅ Link posted successfully to {target_group}")
                 else:
                     failed += 1
                     print(f"    ❌ Failed to post to {target_group}")
+                    continue
+                
+                # ============================================================
+                # CONNECTION CHECK: Before scanning
+                # ============================================================
+                if not await self.ensure_connection(f"market_group_links_before_scan_{target_group}"):
+                    print("⚠️ Connection lost before scanning. Skipping scan...")
+                    # Don't continue to scan, but still continue to next target
                     continue
                 
                 # ============================================================
@@ -1011,10 +1527,18 @@ class GroupLinkMarketer:
                 
                 if new_links:
                     print(f"    ✅ Found {len(new_links)} new link(s) in {target_group}")
-                    self._store_new_links(target_group, new_links, category)
+                    # Use async version with connection checks
+                    await self._store_new_links_with_connection_check(target_group, new_links, category)
                     new_links_found += len(new_links)
                 else:
                     print(f"    ℹ️ No new links found in {target_group}")
+                
+                # ============================================================
+                # CONNECTION CHECK: Before waiting
+                # ============================================================
+                if not await self.ensure_connection(f"market_group_links_before_wait_{target_group}"):
+                    print("⚠️ Connection lost before wait. Waiting anyway...")
+                    # Still wait to avoid rate limiting
                 
                 # ============================================================
                 # STEP 4: RANDOM DELAY BEFORE NEXT GROUP
@@ -1022,6 +1546,10 @@ class GroupLinkMarketer:
                 delay = random.uniform(DELAYS["between_messages"], DELAYS["between_messages"] + 5)
                 print(f"\n    ⏳ Waiting {delay:.1f}s before next target...")
                 await asyncio.sleep(delay)
+        
+        # CONNECTION CHECK: Before final summary
+        if not await self.ensure_connection("market_group_links_summary"):
+            print("⚠️ Connection lost during final summary. Some stats may be incomplete.")
         
         # Summary
         print("\n" + "=" * 60)
@@ -1035,6 +1563,13 @@ class GroupLinkMarketer:
         print(f"📱 Groups marketed: {len(source_groups)}")
         print(f"📋 Total posted: {len(self.posted_manager.get_all_posted())}")
         print(f"📜 Scroll count used: {self.scroll_count}")
+        print("")
+        print("📊 CONNECTION MONITORING STATISTICS")
+        print("-" * 40)
+        print(f"Total connection checks: {self.connection_stats['checks_performed']}")
+        print(f"Disconnections detected: {self.connection_stats['disconnections_detected']}")
+        print(f"Reconnections succeeded: {self.connection_stats['reconnections_succeeded']}")
+        print(f"Operations paused: {self.connection_stats['operations_paused']}")
         print("=" * 60)
         
         # Show posted links
@@ -1054,29 +1589,44 @@ class GroupLinkMarketer:
         }
     
     # ============================================================
-    # MARKET SPECIFIC CATEGORY
+    # MARKET SPECIFIC CATEGORY - WITH CONNECTION CHECK
     # ============================================================
     
     async def market_category(self, category: str):
         """Market links from a specific category to other groups"""
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection(f"market_category_{category}"):
+            print("❌ Cannot start - WhatsApp not connected")
+            return
+        
         print(f"\n🎯 Marketing {category.upper()} category groups")
         await self.market_group_links(category)
     
     # ============================================================
-    # MARKET CORE GROUPS
+    # MARKET CORE GROUPS - WITH CONNECTION CHECK
     # ============================================================
     
     async def market_core_groups(self):
         """Market only core group links to other groups"""
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection("market_core_groups"):
+            print("❌ Cannot start - WhatsApp not connected")
+            return
+        
         print("\n⭐ Marketing CORE groups")
         await self.market_group_links("core")
     
     # ============================================================
-    # MARKET ALL GROUPS
+    # MARKET ALL GROUPS - WITH CONNECTION CHECK
     # ============================================================
     
     async def market_all_groups(self):
         """Market all group links to other groups"""
+        # CONNECTION CHECK: Before starting
+        if not await self.ensure_connection("market_all_groups"):
+            print("❌ Cannot start - WhatsApp not connected")
+            return
+        
         print("\n🌍 Marketing ALL groups")
         await self.market_group_links("all")
     
@@ -1098,3 +1648,72 @@ class GroupLinkMarketer:
         removed = self.posted_manager.reset_all()
         print(f"   ✅ Removed {removed} entries. Ready for fresh start!")
         return removed
+    
+    # ============================================================
+    # SET PAGE AND CONTEXT
+    # ============================================================
+    
+    def set_page(self, page, context):
+        """Set the page and context for the marketer"""
+        self.page = page
+        self.context = context
+        print("✅ Page and context set for GroupLinkMarketer")
+
+
+# ============================================================
+# MAIN ENTRY POINT - FOR STANDALONE USE
+# ============================================================
+
+async def main():
+    """Main entry point for standalone testing"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=False)
+        context = await browser.new_context(
+            viewport={'width': 1280, 'height': 800},
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        )
+        page = await context.new_page()
+        
+        # Initialize marketer (no login manager for standalone)
+        marketer = GroupLinkMarketer(scroll_count=10)
+        marketer.set_page(page, context)
+        
+        # Start the marketer (starts background health monitor)
+        await marketer.start()
+        
+        # Navigate to WhatsApp Web
+        await page.goto("https://web.whatsapp.com")
+        print("📱 Please scan the QR code to login...")
+        print("⏳ Waiting for WhatsApp to load...")
+        
+        # Wait for WhatsApp to load
+        await page.wait_for_selector('div[data-testid="chat-list"]', timeout=120000)
+        print("✅ WhatsApp loaded successfully!")
+        
+        try:
+            # Market core groups
+            await marketer.market_core_groups()
+            
+        except KeyboardInterrupt:
+            print("\n\n⏹️ Stopped by user")
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        finally:
+            # Stop the marketer
+            await marketer.stop()
+            
+            print("\n📊 Marketing complete!")
+            print(f"📊 Connection checks performed: {marketer.connection_stats['checks_performed']}")
+            print(f"   Disconnections detected: {marketer.connection_stats['disconnections_detected']}")
+            print(f"   Reconnections succeeded: {marketer.connection_stats['reconnections_succeeded']}")
+            
+            # Keep browser open for a moment
+            print("\n⏳ Press Ctrl+C to close browser...")
+            await asyncio.sleep(10)
+            await browser.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())

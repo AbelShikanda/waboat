@@ -1,13 +1,14 @@
 """
 WhatsApp Bot - Main Entry Point
 ===============================
-Imports LoginManager and GroupPoster
+Imports LoginManager and GroupPoster (FIXED VERSION - Enter Key Only)
 Supports:
-- Normal product posting
+- Normal product posting (with Enter key, no send button search)
 - Group management (manage-groups)
 - Group link marketing (link-market)
 - Contact messaging (send-messages)
 - CLI commands (cli)
+- ANALYTICS commands (analytics, trending, groups, stats)
 """
 
 import asyncio
@@ -17,6 +18,18 @@ from group_poster import GroupPoster
 from group_manager import GroupManager
 from group_link_marketer import GroupLinkMarketer
 from contact_messenger import ContactMessenger
+
+# ============================================================
+# IMPORT ANALYTICS MODULE
+# ============================================================
+
+from analytics_module import (
+    DatabaseManager,
+    AnalyticsDisplay,
+    AnalyticsExport,
+    run_analytics_command,
+    get_analytics_help
+)
 
 # ============================================================
 # HELP
@@ -30,6 +43,13 @@ def show_help():
   python whatsapp_bot.py manage-groups        - Collect group links & update descriptions
   python whatsapp_bot.py link-market          - Market group links to other groups
   python whatsapp_bot.py send-messages        - Send occasional messages to contacts
+  python whatsapp_bot.py analytics            - Show analytics dashboard
+  python whatsapp_bot.py analytics --html     - Generate HTML report
+  python whatsapp_bot.py analytics --export   - Export data to CSV
+  python whatsapp_bot.py analytics --group "Name" - Group analytics
+  python whatsapp_bot.py trending             - Show trending topics
+  python whatsapp_bot.py groups               - List all groups with stats
+  python whatsapp_bot.py stats                - Show database statistics
   python whatsapp_bot.py cli [cmd]            - Run CLI commands
   python whatsapp_bot.py help                 - Show this help
 
@@ -55,7 +75,22 @@ def show_help():
   send-messages birthday business             - Birthday wishes to business contacts
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CLI Commands:
+📊 ANALYTICS COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  analytics                                   - Show full analytics dashboard
+  analytics --html                            - Generate HTML report (opens in browser)
+  analytics --export                          - Export all data to CSV
+  analytics --group "Group Name"              - Show analytics for specific group
+  analytics --list-groups                     - List all groups in database
+  trending                                    - Show trending topics (last 7 days)
+  trending --days 14                          - Show trending (last 14 days)
+  trending --limit 20                         - Show top 20 trending topics
+  groups                                      - List all groups with message counts
+  groups --limit 10                           - Show top 10 groups
+  stats                                       - Show database statistics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 CLI COMMANDS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   python whatsapp_bot.py cli list             - List pending products
   python whatsapp_bot.py cli queue            - Show queue status
@@ -66,7 +101,7 @@ CLI Commands:
   python whatsapp_bot.py cli reset            - Reset all products to pending
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Available Message Categories:
+📋 AVAILABLE MESSAGE CATEGORIES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   customers  → Customer contacts
   business   → Business contacts  
@@ -74,13 +109,16 @@ Available Message Categories:
   (no category) → All contacts
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Examples:
+💡 EXAMPLES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  python whatsapp_bot.py post 3               # Post 3 products
   python whatsapp_bot.py manage-groups        # Collect all group links
   python whatsapp_bot.py link-market          # Market group links
   python whatsapp_bot.py send-messages new_year  # Send New Year messages
-  python whatsapp_bot.py send-messages christmas customers  # Christmas to customers
-  python whatsapp_bot.py send-messages birthday friends  # Birthday to friends
+  python whatsapp_bot.py analytics --html     # Generate HTML report
+  python whatsapp_bot.py trending             # Show trending topics
+  python whatsapp_bot.py groups --limit 10    # Show top 10 groups
+  python whatsapp_bot.py stats                # Show database stats
   python whatsapp_bot.py cli list             # Show pending products
 """)
 
@@ -97,7 +135,8 @@ async def handle_manage_groups():
     login = LoginManager()
     try:
         if await login.login():
-            manager = GroupManager()
+            # ✅ FIXED: Pass login_manager to GroupManager
+            manager = GroupManager(login_manager=login)
             manager.page = login.page
             manager.context = login.context
             await manager.manage_all_groups()
@@ -121,7 +160,8 @@ async def handle_link_market():
     login = LoginManager()
     try:
         if await login.login():
-            marketer = GroupLinkMarketer()
+            # ✅ FIXED: Pass login_manager to GroupLinkMarketer
+            marketer = GroupLinkMarketer(login_manager=login)
             marketer.page = login.page
             marketer.context = login.context
             await marketer.market_group_links("all")
@@ -179,7 +219,8 @@ async def handle_send_messages(occasion: str = None, category: str = None, custo
     login = LoginManager()
     try:
         if await login.login():
-            messenger = ContactMessenger()
+            # ✅ FIXED: Pass login_manager to ContactMessenger
+            messenger = ContactMessenger(login_manager=login)
             messenger.page = login.page
             messenger.context = login.context
             
@@ -211,13 +252,21 @@ async def handle_send_messages(occasion: str = None, category: str = None, custo
         await login.shutdown()
 
 # ============================================================
-# PRODUCT POSTING (Normal Mode)
+# ANALYTICS COMMAND HANDLER
+# ============================================================
+
+def handle_analytics_command(args):
+    """Route analytics commands to analytics_module"""
+    run_analytics_command(args)
+
+# ============================================================
+# PRODUCT POSTING (Normal Mode) - USES FIXED GROUP POSTER
 # ============================================================
 
 async def run_product_poster():
-    """Run normal product posting mode"""
+    """Run normal product posting mode using FIXED GroupPoster (Enter key only)"""
     print("=" * 60)
-    print("📢 PRODUCT POSTER")
+    print("📢 PRODUCT POSTER (FIXED VERSION - Enter Key Only)")
     print("=" * 60)
     
     login = LoginManager()
@@ -225,13 +274,16 @@ async def run_product_poster():
     
     try:
         if await login.login():
-            poster = GroupPoster(login.page, login.context)
+            # ✅ FIXED: Pass login_manager to GroupPoster
+            poster = GroupPoster(login.page, login.context, login_manager=login)
             
             print("\n" + "=" * 60)
             print("📢 Ready to post random products!")
             print("=" * 60)
             print("📝 Messages will preserve line breaks")
             print("⏳ Link previews will load before sending")
+            print("⌨️  Using Enter key to send (NO send button search)")
+            print("📊 Data collection enabled (stays in groups, collects chat history)")
             print("=" * 60)
             
             await poster.post_random_products(count=None)
@@ -248,7 +300,7 @@ async def run_product_poster():
         traceback.print_exc()
     finally:
         if poster:
-            await poster.product_loader.load_all_products(status=None)
+            poster.db.close()
         await login.shutdown()
 
 # ============================================================
@@ -297,6 +349,77 @@ async def main():
                 await handle_send_messages(occasion)
             return
         
+        # ============================================================
+        # ANALYTICS COMMANDS
+        # ============================================================
+        elif command == "analytics":
+            # Parse analytics arguments
+            import argparse
+            args = argparse.Namespace()
+            args.command = "analytics"
+            args.html = "--html" in sys.argv or "-H" in sys.argv
+            args.export = "--export" in sys.argv or "-e" in sys.argv
+            args.group = None
+            args.list_groups = "--list-groups" in sys.argv
+            
+            # Parse --group argument
+            for i, arg in enumerate(sys.argv):
+                if arg == "--group" and i + 1 < len(sys.argv):
+                    args.group = sys.argv[i + 1]
+                    break
+            
+            args.days = 7
+            args.limit = 10
+            run_analytics_command(args)
+            return
+        
+        elif command == "trending":
+            import argparse
+            args = argparse.Namespace()
+            args.command = "trending"
+            args.days = 7
+            args.limit = 15
+            
+            # Parse --days and --limit
+            for i, arg in enumerate(sys.argv):
+                if arg == "--days" and i + 1 < len(sys.argv):
+                    try:
+                        args.days = int(sys.argv[i + 1])
+                    except:
+                        pass
+                if arg == "--limit" and i + 1 < len(sys.argv):
+                    try:
+                        args.limit = int(sys.argv[i + 1])
+                    except:
+                        pass
+            
+            run_analytics_command(args)
+            return
+        
+        elif command == "groups":
+            import argparse
+            args = argparse.Namespace()
+            args.command = "groups"
+            args.limit = None
+            
+            # Parse --limit
+            for i, arg in enumerate(sys.argv):
+                if arg == "--limit" and i + 1 < len(sys.argv):
+                    try:
+                        args.limit = int(sys.argv[i + 1])
+                    except:
+                        pass
+            
+            run_analytics_command(args)
+            return
+        
+        elif command == "stats":
+            import argparse
+            args = argparse.Namespace()
+            args.command = "stats"
+            run_analytics_command(args)
+            return
+        
         elif command == "help" or command == "--help" or command == "-h":
             show_help()
             return
@@ -307,7 +430,7 @@ async def main():
             return
     
     # ============================================================
-    # NORMAL MODE: Product Posting
+    # NORMAL MODE: Product Posting using FIXED GroupPoster
     # ============================================================
     await run_product_poster()
 

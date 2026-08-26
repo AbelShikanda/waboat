@@ -8,6 +8,10 @@ Handles all WhatsApp Web login and session management:
 - Browser launch with anti-detection
 - 5 retry attempts with 1 minute between retries
 - 4 minute wait before page refresh
+- CONNECTION MONITORING: Multi-layer connection detection
+  - Uses multiple indicators (logo, search, title, body)
+  - Requires 3 consecutive failures before disconnecting
+  - Deep verification before declaring disconnection
 """
 
 import json
@@ -27,6 +31,15 @@ WHATSAPP_WEB_URL = "https://web.whatsapp.com"
 MAX_LOGIN_ATTEMPTS = 5
 RETRY_DELAY = 60  # 1 minute between retries
 QR_REFRESH_DELAY = 360  # 4 minutes before refresh
+
+# ============================================================
+# CONNECTION MONITORING CONFIGURATION
+# ============================================================
+
+CONNECTION_CHECK_INTERVAL = 5  # Check every 5 seconds
+MAX_RECONNECT_ATTEMPTS = 3     # Number of reconnect attempts
+RECONNECT_DELAY = 10           # Seconds between reconnect attempts
+CONSECUTIVE_FAILURES_THRESHOLD = 3  # Must fail 3 times before declaring disconnected
 
 # Create session directory
 SESSION_DIR.mkdir(exist_ok=True)
@@ -51,8 +64,11 @@ class LoginManager:
         self.page = None
         self.playwright = None
         self.is_logged_in = False
+        self.is_connected = False
         self.qr_shown_after_valid_session = False
-        self.use_saved_session = use_saved_session  # Default: FALSE - FRESH SESSION
+        self.use_saved_session = use_saved_session
+        self.monitor_task = None
+        self._consecutive_failures = 0  # Track consecutive failures
     
     # ============================================================
     # SESSION MANAGEMENT
@@ -106,10 +122,10 @@ class LoginManager:
         print("   Scan the QR code in the browser")
         print(f"   ⏳ Will wait up to {QR_REFRESH_DELAY}s before refreshing")
         print("=" * 60 + "\n")
-        return False  # Always return False to force QR scan
+        return False
     
     # ============================================================
-    # BROWSER LAUNCH - IMPROVED
+    # BROWSER LAUNCH
     # ============================================================
     
     async def launch_browser(self):
@@ -117,13 +133,9 @@ class LoginManager:
         try:
             self.playwright = await async_playwright().start()
             
-            # ============================================================
-            # OPTION 1: FRESH CONTEXT (RECOMMENDED - MOST RELIABLE)
-            # ============================================================
             if not self.use_saved_session:
                 print("🚀 Launching fresh browser (no saved session)")
                 
-                # Delete any old session file to be safe
                 if SESSION_FILE.exists():
                     try:
                         SESSION_FILE.unlink()
@@ -149,12 +161,10 @@ class LoginManager:
                 self.context = await self.browser.new_context(
                     user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     viewport={'width': 1280, 'height': 720},
-                    # NO STORAGE STATE - FRESH SESSION
                 )
                 
                 self.page = await self.context.new_page()
                 
-                # Anti-detection
                 await self.page.add_init_script("""
                     Object.defineProperty(navigator, 'webdriver', {
                         get: () => undefined
@@ -163,9 +173,6 @@ class LoginManager:
                 
                 return True
             
-            # ============================================================
-            # OPTION 2: PERSISTENT CONTEXT (NOT RECOMMENDED)
-            # ============================================================
             else:
                 print("🚀 Launching browser with persistent context (SAVED SESSION)")
                 print("   ⚠️ This may cause issues with group messaging!")
@@ -206,7 +213,7 @@ class LoginManager:
             return False
     
     # ============================================================
-    # SESSION SAVING - ONLY FOR PERSISTENT MODE
+    # SESSION SAVING
     # ============================================================
     
     async def save_session_state(self):
@@ -281,6 +288,14 @@ class LoginManager:
                     print("✅ Login successful!")
                     await self.save_session_state()
                     self.is_logged_in = True
+                    self.is_connected = True
+                    
+                    # Start connection monitor
+                    self.monitor_task = asyncio.create_task(self._monitor_connection())
+                    print("🔌 Connection monitor started (multi-layer detection)")
+                    print("   - Checks logo, search, title, and page responsiveness")
+                    print(f"   - Requires {CONSECUTIVE_FAILURES_THRESHOLD} consecutive failures before disconnect")
+                    
                     return True
                 else:
                     print(f"❌ Login attempt {attempt_num} failed")
@@ -395,12 +410,421 @@ class LoginManager:
         return False
     
     # ============================================================
+    # CONNECTION MONITOR - MULTI-LAYER DETECTION
+    # ============================================================
+    
+    async def _monitor_connection(self):
+        """
+        Continuously monitor WhatsApp connection status using MULTIPLE indicators.
+        Uses a tiered approach - checks multiple elements before declaring disconnection.
+        """
+        print("🔌 Connection monitor active (multi-layer detection)")
+        
+        while True:
+            try:
+                await asyncio.sleep(CONNECTION_CHECK_INTERVAL)
+                
+                # Check if page exists
+                if not self.page:
+                    print("⚠️ Page missing - connection lost")
+                    self.is_connected = False
+                    await self._handle_disconnection()
+                    self._consecutive_failures = 0
+                    continue
+                
+                # ============================================================
+                # TIER 1: Quick checks (most reliable)
+                # ============================================================
+                is_connected = await self._quick_connection_check()
+                
+                if is_connected:
+                    if self._consecutive_failures > 0:
+                        print(f"✅ Connection stable (recovered from {self._consecutive_failures} failures)")
+                    self._consecutive_failures = 0
+                    if not self.is_connected:
+                        self.is_connected = True
+                        print("✅ WhatsApp reconnected!")
+                    continue
+                
+                # If quick check fails, increment failures
+                self._consecutive_failures += 1
+                
+                # Only log every few failures to avoid spam
+                if self._consecutive_failures < CONSECUTIVE_FAILURES_THRESHOLD:
+                    print(f"⚠️ Quick check failed ({self._consecutive_failures}/{CONSECUTIVE_FAILURES_THRESHOLD})")
+                
+                # ============================================================
+                # TIER 2: Deep check if quick check failed multiple times
+                # ============================================================
+                if self._consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD:
+                    print("⚠️ Multiple connection checks failed - verifying...")
+                    is_actually_connected = await self._deep_connection_check()
+                    
+                    if is_actually_connected:
+                        print("✅ Connection confirmed (deep check passed)")
+                        self._consecutive_failures = 0
+                        if not self.is_connected:
+                            self.is_connected = True
+                            print("✅ WhatsApp reconnected!")
+                        continue
+                    else:
+                        # Confirmed disconnection
+                        print("⚠️ WhatsApp disconnected! (confirmed by deep check)")
+                        self.is_connected = False
+                        await self._handle_disconnection()
+                        self._consecutive_failures = 0
+                
+            except Exception as e:
+                print(f"⚠️ Connection check error: {e}")
+                self._consecutive_failures += 1
+                
+                if self._consecutive_failures >= CONSECUTIVE_FAILURES_THRESHOLD:
+                    self.is_connected = False
+                    await self._handle_disconnection()
+                    self._consecutive_failures = 0
+    
+    async def _quick_connection_check(self) -> bool:
+        """
+        Quick connection check using multiple reliable indicators.
+        Returns True if ANY indicator is found.
+        """
+        try:
+            # ============================================================
+            # INDICATOR 1: Check page title (fastest)
+            # ============================================================
+            try:
+                page_title = await self.page.title()
+                if page_title and "WhatsApp" in page_title:
+                    return True
+            except:
+                pass
+            
+            # ============================================================
+            # INDICATOR 2: Check for WhatsApp logo/icon (always present)
+            # ============================================================
+            logo_selectors = [
+                '[aria-label="WhatsApp"]',
+                'div[data-testid="app"]',
+                '.landing-wrapper',
+                'div[data-testid="landing-window"]',
+                'img[alt="WhatsApp"]'
+            ]
+            
+            for selector in logo_selectors:
+                try:
+                    element = await self.page.query_selector(selector)
+                    if element:
+                        is_visible = await element.is_visible()
+                        if is_visible:
+                            return True
+                except:
+                    continue
+            
+            # ============================================================
+            # INDICATOR 3: Check for search box (appears early)
+            # ============================================================
+            search_selectors = [
+                'div[data-testid="chat-list-search"]',
+                'input[type="text"]',
+                'div[role="textbox"]',
+                'button[aria-label="Search"]'
+            ]
+            
+            for selector in search_selectors:
+                try:
+                    element = await self.page.query_selector(selector)
+                    if element:
+                        is_visible = await element.is_visible()
+                        if is_visible:
+                            return True
+                except:
+                    continue
+            
+            # ============================================================
+            # INDICATOR 4: Check for chat list (if loaded)
+            # ============================================================
+            try:
+                chat_list = await self.page.query_selector('div[data-testid="chat-list"]')
+                if chat_list:
+                    is_visible = await chat_list.is_visible()
+                    if is_visible:
+                        return True
+            except:
+                pass
+            
+            # ============================================================
+            # INDICATOR 5: Check for any content on the page
+            # ============================================================
+            try:
+                body = await self.page.query_selector('body')
+                if body:
+                    inner_html = await body.inner_html()
+                    if inner_html and len(inner_html) > 100:
+                        return True
+            except:
+                pass
+            
+            return False
+            
+        except Exception as e:
+            return False
+    
+    async def _deep_connection_check(self) -> bool:
+        """
+        Deep connection check - tries to interact with the page.
+        Returns True if the page is responsive.
+        """
+        try:
+            # ============================================================
+            # METHOD 1: Try to execute JavaScript on the page
+            # ============================================================
+            try:
+                result = await self.page.evaluate('''
+                    () => {
+                        // Check if the page is responsive
+                        const body = document.body;
+                        if (!body) return false;
+                        
+                        // Check if we can access WhatsApp's global objects
+                        if (window.Store || window.WWebJS || window.WebSocket) {
+                            return true;
+                        }
+                        
+                        // Check if we can find any WhatsApp-specific elements
+                        const hasWhatsApp = document.querySelector('[aria-label="WhatsApp"]') ||
+                                          document.querySelector('div[data-testid="app"]') ||
+                                          document.querySelector('.landing-wrapper');
+                        
+                        return !!hasWhatsApp;
+                    }
+                ''')
+                if result:
+                    return True
+            except:
+                pass
+            
+            # ============================================================
+            # METHOD 2: Try to find any interactive element
+            # ============================================================
+            interactive_selectors = [
+                'button',
+                'input',
+                'div[role="button"]',
+                'div[role="textbox"]',
+                'a'
+            ]
+            
+            for selector in interactive_selectors:
+                try:
+                    elements = await self.page.query_selector_all(selector)
+                    if elements and len(elements) > 0:
+                        # Check if at least one is visible
+                        for element in elements[:5]:  # Check first 5
+                            try:
+                                if await element.is_visible():
+                                    return True
+                            except:
+                                continue
+                except:
+                    continue
+            
+            # ============================================================
+            # METHOD 3: Check if page is still loading (not crashed)
+            # ============================================================
+            try:
+                # Check for loading indicators
+                loading_selectors = [
+                    'div[data-testid="loading"]',
+                    '.loader',
+                    '.loading',
+                    '[aria-label="Loading"]'
+                ]
+                
+                for selector in loading_selectors:
+                    try:
+                        element = await self.page.query_selector(selector)
+                        if element and await element.is_visible():
+                            # Still loading - but this means the page is alive!
+                            return True
+                    except:
+                        continue
+            except:
+                pass
+            
+            # ============================================================
+            # METHOD 4: Check if page title is accessible
+            # ============================================================
+            try:
+                title = await self.page.title()
+                if title and len(title) > 0:
+                    return True
+            except:
+                pass
+            
+            # ============================================================
+            # METHOD 5: Check if we can reload the page (last resort)
+            # ============================================================
+            try:
+                # Try a simple JavaScript call
+                await self.page.evaluate('document.readyState')
+                return True
+            except:
+                pass
+            
+            return False
+            
+        except Exception as e:
+            print(f"⚠️ Deep connection check failed: {e}")
+            return False
+    
+    # ============================================================
+    # EXTERNAL CONNECTION METHODS
+    # ============================================================
+    
+    async def check_connection(self) -> bool:
+        """
+        Quick one-time connection check for external callers.
+        Returns True if connected, False if not.
+        """
+        is_connected = await self._quick_connection_check()
+        self.is_connected = is_connected
+        return is_connected
+    
+    async def wait_for_connection(self, timeout: int = 60) -> bool:
+        """
+        Wait for WhatsApp to be connected.
+        Returns True if connected, False if timeout.
+        """
+        print(f"⏳ Waiting for WhatsApp to connect... (timeout: {timeout}s)")
+        
+        start_time = asyncio.get_event_loop().time()
+        while asyncio.get_event_loop().time() - start_time < timeout:
+            is_connected = await self._quick_connection_check()
+            if is_connected:
+                self.is_connected = True
+                print("✅ Connected!")
+                return True
+            
+            # Show progress every 10 seconds
+            elapsed = int(asyncio.get_event_loop().time() - start_time)
+            if elapsed % 10 == 0 and elapsed > 0:
+                print(f"⏳ Still waiting... ({elapsed}s)")
+            
+            await asyncio.sleep(2)
+        
+        print(f"❌ Connection timeout after {timeout}s")
+        return False
+    
+    async def ensure_connection(self) -> bool:
+        """
+        Ensure connection is active. If not, wait for it.
+        Returns True if connected, False if failed.
+        """
+        if self.is_connected:
+            return True
+        
+        print("⏳ Waiting for WhatsApp to reconnect...")
+        return await self.wait_for_connection()
+    
+    # ============================================================
+    # HANDLE DISCONNECTION
+    # ============================================================
+    
+    async def _handle_disconnection(self):
+        """
+        Handle disconnection with retry logic.
+        Uses the same multi-layer checks.
+        """
+        print(f"🔄 Attempting to reconnect...")
+        
+        for attempt in range(MAX_RECONNECT_ATTEMPTS):
+            try:
+                # First check if page is alive
+                if self.page:
+                    # Try to get title - if this works, page is alive
+                    try:
+                        title = await self.page.title()
+                        if title and "WhatsApp" in title:
+                            print("✅ Page is alive, checking connection...")
+                            # Try reloading the page
+                            await self.page.reload()
+                            await asyncio.sleep(5)
+                            
+                            # Check connection with deep check
+                            if await self._deep_connection_check():
+                                self.is_connected = True
+                                self._consecutive_failures = 0
+                                print("✅ Successfully reconnected!")
+                                return
+                    except:
+                        pass
+                
+                # If reload fails, try re-login
+                if attempt == MAX_RECONNECT_ATTEMPTS - 1:
+                    print("🔄 Attempting full re-login...")
+                    await self._re_login()
+                    return
+                    
+            except Exception as e:
+                print(f"⚠️ Reconnect attempt {attempt + 1} failed: {e}")
+            
+            await asyncio.sleep(RECONNECT_DELAY)
+        
+        print("❌ Failed to reconnect after multiple attempts.")
+    
+    async def _re_login(self):
+        """Full re-login process"""
+        try:
+            # Close old page and create new one
+            if self.page:
+                await self.page.close()
+            
+            self.page = await self.context.new_page()
+            
+            # Re-apply stealth scripts
+            await self.page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+                window.chrome = { runtime: {} };
+            """)
+            
+            await self.page.goto(WHATSAPP_WEB_URL)
+            print("📱 Please scan the QR code to re-login...")
+            
+            # Wait for login using multi-layer check
+            for _ in range(60):  # 60 seconds timeout
+                if await self._quick_connection_check():
+                    self.is_connected = True
+                    self._consecutive_failures = 0
+                    print("✅ Re-login successful!")
+                    return
+                await asyncio.sleep(1)
+            
+            print("❌ Re-login timed out")
+            
+        except Exception as e:
+            print(f"❌ Re-login failed: {e}")
+    
+    # ============================================================
     # CLEANUP
     # ============================================================
     
     async def cleanup(self):
         """Clean up browser resources"""
         try:
+            # Cancel monitor task
+            if self.monitor_task:
+                self.monitor_task.cancel()
+                try:
+                    await self.monitor_task
+                except:
+                    pass
+                self.monitor_task = None
+            
             if self.page:
                 await self.page.close()
             if self.context:
@@ -416,6 +840,8 @@ class LoginManager:
         self.context = None
         self.browser = None
         self.playwright = None
+        self.is_connected = False
+        self._consecutive_failures = 0
     
     async def shutdown(self):
         """Shutdown login manager"""
