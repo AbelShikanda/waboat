@@ -758,7 +758,6 @@ class LoginManager:
                     if element and await element.is_visible():
                         print("\n🔴 'Memory full' popup detected!")
                         print("   💻 Computer does not have enough space.")
-                        print("   ⚠️ This requires manual intervention to free up disk space.")
                         
                         if self._is_logging_out:
                             print("   ⏳ Already handling memory issue, waiting...")
@@ -766,7 +765,9 @@ class LoginManager:
                         
                         self._is_logging_out = True
                         
-                        # Try to find and click OK button (dismiss the popup)
+                        # ============================================================
+                        # STEP 1: Try to find and click OK button (dismiss the popup)
+                        # ============================================================
                         ok_clicked = False
                         for button_selector in OK_BUTTONS:
                             try:
@@ -798,60 +799,65 @@ class LoginManager:
                                 except:
                                     continue
                         
-                        if ok_clicked:
-                            print("\n" + "=" * 70)
-                            print("🔴 MEMORY FULL / DISK SPACE ERROR")
-                            print("=" * 70)
-                            print("   The computer does not have enough free disk space.")
-                            print("")
-                            print("   ⚠️  ACTIONS REQUIRED:")
-                            print("   1. Free up disk space on your computer")
-                            print("   2. Close unnecessary applications")
-                            print("   3. Clear temporary files")
-                            print("   4. Restart the browser if needed")
-                            print("")
-                            print("   ⏳ Bot is PAUSED until disk space is freed.")
-                            print("   🔄 After freeing space, restart the bot.")
-                            print("=" * 70 + "\n")
-                            
-                            # Mark as disconnected and set state
-                            self.is_connected = False
-                            self.is_logged_in = False
-                            
-                            # Pause indefinitely - user must free space and restart
-                            while True:
-                                print("   ⏳ Bot paused due to disk space error.")
-                                print("   💡 Please free up space and restart the bot.")
-                                await asyncio.sleep(30)  # Check every 30 seconds
-                                
-                                # Check if user has manually reloaded or reconnected
-                                if await self._check_connected():
-                                    print("   ✅ Connection restored! Resuming...")
-                                    self._is_logging_out = False
-                                    return True
-                                
-                                # Check if popup is gone (user might have closed it)
-                                try:
-                                    still_present = False
-                                    for s in MEMORY_FULL_SELECTORS:
-                                        el = await self.page.query_selector(s)
-                                        if el and await el.is_visible():
-                                            still_present = True
-                                            break
-                                    if not still_present:
-                                        print("   ✅ Popup dismissed manually.")
-                                        await self._check_connected()
-                                        self._is_logging_out = False
-                                        return True
-                                except:
-                                    pass
-                        else:
-                            print("   ⚠️ Could not find OK button, pressing Escape...")
-                            await self.page.keyboard.press('Escape')
-                            self._is_logging_out = False
-                            handled = True
+                        # ============================================================
+                        # STEP 2: If OK button not found, REFRESH THE BROWSER
+                        # ============================================================
+                        if not ok_clicked:
+                            print("   ⚠️ Could not find OK button, refreshing browser page...")
+                            try:
+                                await self.page.reload()
+                                print("   ✅ Browser page refreshed")
+                                handled = True
+                                self._memory_full_handled = True
+                                await asyncio.sleep(5)  # Wait for page to reload
+                            except Exception as e:
+                                print(f"   ⚠️ Could not refresh page: {e}")
+                                # Last resort: press Escape to dismiss
+                                print("   ⏳ Pressing Escape as last resort...")
+                                await self.page.keyboard.press('Escape')
+                                handled = True
                         
-                        return handled
+                        # ============================================================
+                        # STEP 3: PAUSE AND WAIT FOR RE-LOGIN/RECONNECTION
+                        # ============================================================
+                        print("\n" + "=" * 70)
+                        print("🔴 MEMORY FULL / DISK SPACE ERROR")
+                        print("=" * 70)
+                        print("   The computer does not have enough free disk space.")
+                        print("")
+                        print("   ⚠️  ACTIONS REQUIRED:")
+                        print("   1. Free up disk space on your computer")
+                        print("   2. Close unnecessary applications")
+                        print("   3. Clear temporary files")
+                        print("")
+                        print("   ⏳ Bot is PAUSED until disk space is freed.")
+                        print("   🔄 After freeing space, the bot will automatically reconnect.")
+                        print("=" * 70 + "\n")
+                        
+                        # Mark as disconnected and set state
+                        self.is_connected = False
+                        self.is_logged_in = False
+                        self._welcome_popup_handled = False
+                        self._welcome_popup_checked = False
+                        
+                        # ============================================================
+                        # STEP 4: Wait for reconnection (user frees space, bot reconnects)
+                        # ============================================================
+                        print("   ⏳ Waiting for WhatsApp to reconnect...")
+                        print("   💡 Free up disk space, then the bot will auto-reconnect.")
+                        
+                        # Wait for connection with longer timeout
+                        reconnected = await self.wait_for_connection(timeout=600)  # 10 minutes
+                        
+                        if reconnected:
+                            print("   ✅ Reconnected! Resuming operations...")
+                            self._is_logging_out = False
+                            return True
+                        else:
+                            print("   ⚠️ Still disconnected. Please check disk space and restart the bot.")
+                            self._is_logging_out = False
+                            return handled
+                        
                 except:
                     continue
             
