@@ -19,17 +19,17 @@ from group_manager import GroupManager
 from group_link_marketer import GroupLinkMarketer
 from contact_messenger import ContactMessenger
 
-# ============================================================
-# IMPORT ANALYTICS MODULE
-# ============================================================
+# # ============================================================
+# # IMPORT ANALYTICS MODULE
+# # ============================================================
 
-from analytics_module import (
-    DatabaseManager,
-    AnalyticsDisplay,
-    AnalyticsExport,
-    run_analytics_command,
-    get_analytics_help
-)
+# from analytics_module import (
+#     DatabaseManager,
+#     AnalyticsDisplay,
+#     AnalyticsExport,
+#     run_analytics_command,
+#     get_analytics_help
+# )
 
 # ============================================================
 # HELP
@@ -349,85 +349,85 @@ async def main():
                 await handle_send_messages(occasion)
             return
         
-        # ============================================================
-        # ANALYTICS COMMANDS
-        # ============================================================
-        elif command == "analytics":
-            # Parse analytics arguments
-            import argparse
-            args = argparse.Namespace()
-            args.command = "analytics"
-            args.html = "--html" in sys.argv or "-H" in sys.argv
-            args.export = "--export" in sys.argv or "-e" in sys.argv
-            args.group = None
-            args.list_groups = "--list-groups" in sys.argv
+        # # ============================================================
+        # # ANALYTICS COMMANDS
+        # # ============================================================
+        # elif command == "analytics":
+        #     # Parse analytics arguments
+        #     import argparse
+        #     args = argparse.Namespace()
+        #     args.command = "analytics"
+        #     args.html = "--html" in sys.argv or "-H" in sys.argv
+        #     args.export = "--export" in sys.argv or "-e" in sys.argv
+        #     args.group = None
+        #     args.list_groups = "--list-groups" in sys.argv
             
-            # Parse --group argument
-            for i, arg in enumerate(sys.argv):
-                if arg == "--group" and i + 1 < len(sys.argv):
-                    args.group = sys.argv[i + 1]
-                    break
+        #     # Parse --group argument
+        #     for i, arg in enumerate(sys.argv):
+        #         if arg == "--group" and i + 1 < len(sys.argv):
+        #             args.group = sys.argv[i + 1]
+        #             break
             
-            args.days = 7
-            args.limit = 10
-            run_analytics_command(args)
-            return
+        #     args.days = 7
+        #     args.limit = 10
+        #     run_analytics_command(args)
+        #     return
         
-        elif command == "trending":
-            import argparse
-            args = argparse.Namespace()
-            args.command = "trending"
-            args.days = 7
-            args.limit = 15
+        # elif command == "trending":
+        #     import argparse
+        #     args = argparse.Namespace()
+        #     args.command = "trending"
+        #     args.days = 7
+        #     args.limit = 15
             
-            # Parse --days and --limit
-            for i, arg in enumerate(sys.argv):
-                if arg == "--days" and i + 1 < len(sys.argv):
-                    try:
-                        args.days = int(sys.argv[i + 1])
-                    except:
-                        pass
-                if arg == "--limit" and i + 1 < len(sys.argv):
-                    try:
-                        args.limit = int(sys.argv[i + 1])
-                    except:
-                        pass
+        #     # Parse --days and --limit
+        #     for i, arg in enumerate(sys.argv):
+        #         if arg == "--days" and i + 1 < len(sys.argv):
+        #             try:
+        #                 args.days = int(sys.argv[i + 1])
+        #             except:
+        #                 pass
+        #         if arg == "--limit" and i + 1 < len(sys.argv):
+        #             try:
+        #                 args.limit = int(sys.argv[i + 1])
+        #             except:
+        #                 pass
             
-            run_analytics_command(args)
-            return
+        #     run_analytics_command(args)
+        #     return
         
-        elif command == "groups":
-            import argparse
-            args = argparse.Namespace()
-            args.command = "groups"
-            args.limit = None
+        # elif command == "groups":
+        #     import argparse
+        #     args = argparse.Namespace()
+        #     args.command = "groups"
+        #     args.limit = None
             
-            # Parse --limit
-            for i, arg in enumerate(sys.argv):
-                if arg == "--limit" and i + 1 < len(sys.argv):
-                    try:
-                        args.limit = int(sys.argv[i + 1])
-                    except:
-                        pass
+        #     # Parse --limit
+        #     for i, arg in enumerate(sys.argv):
+        #         if arg == "--limit" and i + 1 < len(sys.argv):
+        #             try:
+        #                 args.limit = int(sys.argv[i + 1])
+        #             except:
+        #                 pass
             
-            run_analytics_command(args)
-            return
+        #     run_analytics_command(args)
+        #     return
         
-        elif command == "stats":
-            import argparse
-            args = argparse.Namespace()
-            args.command = "stats"
-            run_analytics_command(args)
-            return
+        # elif command == "stats":
+        #     import argparse
+        #     args = argparse.Namespace()
+        #     args.command = "stats"
+        #     run_analytics_command(args)
+        #     return
         
-        elif command == "help" or command == "--help" or command == "-h":
-            show_help()
-            return
+        # elif command == "help" or command == "--help" or command == "-h":
+        #     show_help()
+        #     return
         
-        else:
-            print(f"❌ Unknown command: {command}")
-            print("   Try: python whatsapp_bot.py help")
-            return
+        # else:
+        #     print(f"❌ Unknown command: {command}")
+        #     print("   Try: python whatsapp_bot.py help")
+        #     return
     
     # ============================================================
     # NORMAL MODE: Product Posting using FIXED GroupPoster

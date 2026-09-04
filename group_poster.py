@@ -29,7 +29,7 @@ import re
 # IMPORT DATABASE LOGIC
 # ============================================================
 
-from db_logic import DatabaseManager
+# from db_logic import DatabaseManager
 
 # ============================================================
 # IMPORT TARGET GROUPS
@@ -45,7 +45,7 @@ BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 PRODUCTS_DIR = DATA_DIR / "products"
 FAILED_GROUPS_FILE = DATA_DIR / "failed_groups.json"
-DB_FILE = DATA_DIR / "whatsapp_data.db"
+# DB_FILE = DATA_DIR / "whatsapp_data.db"
 
 # Product files
 WA_PRODUCTS_FILE = PRODUCTS_DIR / "wa_products.json"
@@ -78,13 +78,13 @@ RETRY_DELAY = 2
 LINK_PREVIEW_DELAY = 5
 
 # DATA COLLECTION CONFIGURATION
-STAY_IN_GROUP_DURATION = 2  # Seconds to stay in group after posting
-SCROLL_COUNT = 1  # Number of scrolls to perform for chat history
-MAX_MESSAGES_TO_COLLECT = 500  # Maximum messages to collect per group
-DATA_COLLECTION_INTERVAL = 2  # Seconds between scrolls
+# STAY_IN_GROUP_DURATION = 2  # Seconds to stay in group after posting
+# SCROLL_COUNT = 1  # Number of scrolls to perform for chat history
+# MAX_MESSAGES_TO_COLLECT = 500  # Maximum messages to collect per group
+# DATA_COLLECTION_INTERVAL = 2  # Seconds between scrolls
 
 # Number of products to post per run (1 = post one product to all groups)
-POSTS_PER_RUN = 6
+POSTS_PER_RUN = 2
 
 # Group failure threshold (auto-remove after this many failures)
 MAX_GROUP_FAILURES = 100
@@ -564,7 +564,7 @@ class GroupPoster:
         
         self.product_loader = ProductLoader()
         self.failed_tracker = FailedGroupsTracker()
-        self.db = DatabaseManager()
+        # self.db = DatabaseManager()
         self.is_running = False
         self.current_product = None
         self.collected_messages = []
@@ -789,343 +789,27 @@ class GroupPoster:
             raise
     
     # ============================================================
-    # DATA COLLECTION METHODS - WITH EXHAUSTIVE CONNECTION CHECKS
+    # DATA COLLECTION METHODS - WITH EXHAUSTIVE CONNECTION CHECKS (COMMENTED OUT)
     # ============================================================
     
-    async def collect_chat_history(self, group_name: str, group_id: int) -> int:
-        """
-        Collect chat history with EXHAUSTIVE connection checking.
-        Checks connection BEFORE, DURING, and AFTER every scroll.
-        If connection is lost, aborts and returns what was collected.
-        """
-        
-        try:
-            # CONNECTION CHECK: Before starting
-            await self.ensure_connection("collect_chat_history_start")
-            
-            print(f"  📥 Collecting chat history from: {group_name}")
-            print(f"    ⏳ Staying for {STAY_IN_GROUP_DURATION}s to collect data...")
-            
-            messages_collected = 0
-            unique_messages = set()
-            
-            # Wait for chat to load
-            await asyncio.sleep(3)
-            
-            # CONNECTION CHECK: After loading
-            await self.ensure_connection("collect_chat_history_after_load")
-            
-            # Scroll to load more messages
-            for i in range(SCROLL_COUNT):
-                # ============================================================
-                # CONNECTION CHECK: Before EACH scroll (EXHAUSTIVE)
-                # ============================================================
-                await self.ensure_connection(f"collect_chat_history_scroll_{i+1}")
-                
-                print(f"    📜 Scrolling {i+1}/{SCROLL_COUNT}...")
-                
-                # Try multiple scroll methods
-                try:
-                    await self.page.evaluate("window.scrollBy(0, -500)")
-                except:
-                    pass
-                
-                try:
-                    await self.page.mouse.wheel(delta_x=0, delta_y=-500)
-                except:
-                    pass
-                
-                try:
-                    await self.page.keyboard.press('PageUp')
-                except:
-                    pass
-                
-                await asyncio.sleep(DATA_COLLECTION_INTERVAL)
-                
-                # CONNECTION CHECK: After scrolling, before extracting messages
-                await self.ensure_connection(f"collect_chat_history_extract_{i+1}")
-                
-                # ============================================================
-                # FIXED: Better message extraction
-                # ============================================================
-                
-                # Try multiple selectors for message containers
-                message_selectors = [
-                    'div[data-testid="msg-container"]',
-                    'div[data-testid="message-container"]',
-                    'div[role="row"]',
-                    'div[data-testid="msg-wrapper"]',
-                    'div[data-testid="message-text"]'
-                ]
-                
-                message_elements = []
-                used_selector = None
-                
-                for selector in message_selectors:
-                    try:
-                        elements = await self.page.query_selector_all(selector)
-                        if elements and len(elements) > 0:
-                            message_elements = elements
-                            used_selector = selector
-                            if i == 0:
-                                print(f"    ✅ Found {len(elements)} elements using: {selector}")
-                            break
-                    except:
-                        continue
-                
-                if not message_elements:
-                    # Fallback: look for any div with text that might be a message
-                    try:
-                        message_elements = await self.page.query_selector_all('div[dir="auto"]')
-                        if message_elements and i == 0:
-                            print(f"    ✅ Using text-based extraction: found {len(message_elements)} elements")
-                    except:
-                        pass
-                
-                if not message_elements:
-                    if i % 3 == 0:
-                        print(f"    ⚠️ No messages found on scroll {i+1}")
-                    continue
-                
-                # Extract each message
-                for element_index, element in enumerate(message_elements):
-                    # CONNECTION CHECK: During message extraction (every 10 messages)
-                    if element_index % 10 == 0:
-                        await self.ensure_connection(f"collect_chat_history_message_{messages_collected}")
-                    
-                    try:
-                        # ============================================================
-                        # FIXED: Better text extraction
-                        # ============================================================
-                        
-                        # Try multiple ways to get the text
-                        text = None
-                        
-                        # Method 1: Direct text content
-                        try:
-                            text = await element.text_content()
-                        except:
-                            pass
-                        
-                        # Method 2: Inner text (better for visible text)
-                        if not text or not text.strip():
-                            try:
-                                text = await element.inner_text()
-                            except:
-                                pass
-                        
-                        # Method 3: Get from specific message-text child
-                        if not text or not text.strip():
-                            try:
-                                text_el = await element.query_selector('div[data-testid="message-text"]')
-                                if text_el:
-                                    text = await text_el.text_content()
-                            except:
-                                pass
-                        
-                        # Method 4: Get from any span with text
-                        if not text or not text.strip():
-                            try:
-                                spans = await element.query_selector_all('span')
-                                for span in spans:
-                                    span_text = await span.text_content()
-                                    if span_text and span_text.strip() and len(span_text.strip()) > 2:
-                                        text = span_text
-                                        break
-                            except:
-                                pass
-                        
-                        # Skip if no text
-                        if not text or not text.strip():
-                            continue
-                        
-                        text = text.strip()
-                        
-                        # Skip short messages and date headers
-                        if len(text) < 2:
-                            continue
-                        
-                        # Skip common WhatsApp UI text
-                        skip_texts = [
-                            "Today", "Yesterday", "Messages", "Chat", 
-                            "Search", "Type a message", "Click to chat",
-                            "📷", "🎤", "😊", "👍", "❤️", "😂", "😮", "😢", "😡"
-                        ]
-                        if text in skip_texts:
-                            continue
-                        
-                        # Skip if it looks like a timestamp only
-                        if re.match(r'^\d{1,2}:\d{2}\s*(AM|PM)?$', text):
-                            continue
-                        
-                        # ============================================================
-                        # Extract sender info
-                        # ============================================================
-                        sender = "Unknown"
-                        try:
-                            sender_el = await element.query_selector('div[data-testid="message-author"]')
-                            if sender_el:
-                                sender_text = await sender_el.text_content()
-                                if sender_text and sender_text.strip():
-                                    sender = sender_text.strip()
-                        except:
-                            pass
-                        
-                        # Check if message is from us
-                        is_ours = False
-                        try:
-                            own_el = await element.query_selector('div[data-testid="msg-own"]')
-                            if own_el:
-                                is_ours = True
-                        except:
-                            pass
-                        
-                        # Extract timestamp
-                        timestamp = datetime.now()
-                        try:
-                            time_el = await element.query_selector('div[data-testid="message-timestamp"]')
-                            if time_el:
-                                time_text = await time_el.text_content()
-                                if time_text:
-                                    timestamp = self._parse_whatsapp_time(time_text)
-                        except:
-                            pass
-                        
-                        # Create unique ID for deduplication
-                        msg_id = f"{sender}_{text[:50]}_{timestamp.isoformat()}"
-                        
-                        if msg_id not in unique_messages:
-                            unique_messages.add(msg_id)
-                            
-                            # CONNECTION CHECK: Before database save (every 50 messages)
-                            if messages_collected % 50 == 0:
-                                await self.ensure_connection(f"collect_chat_history_db_save_{messages_collected}")
-                            
-                            # Save to database
-                            self.db.save_message(
-                                group_id=group_id,
-                                sender=sender,
-                                message=text,
-                                timestamp=timestamp,
-                                is_from_us=is_ours,
-                                message_type="text"
-                            )
-                            
-                            messages_collected += 1
-                            
-                            # Debug: Print first few messages
-                            if messages_collected <= 5:
-                                print(f"      📝 Sample {messages_collected}: {sender[:15]}: {text[:50]}...")
-                            
-                            if messages_collected >= MAX_MESSAGES_TO_COLLECT:
-                                break
-                    
-                    except Exception as e:
-                        # Don't stop on individual message errors
-                        continue
-                
-                if messages_collected >= MAX_MESSAGES_TO_COLLECT:
-                    print(f"    ✅ Reached max messages ({MAX_MESSAGES_TO_COLLECT})")
-                    break
-                
-                if i % 5 == 0:
-                    print(f"    📊 Collected {messages_collected} messages so far...")
-            
-            # CONNECTION CHECK: Before database update
-            await self.ensure_connection("collect_chat_history_final_update")
-            
-            self.db.update_group_activity(group_id, messages_collected)
-            
-            print(f"  ✅ Collected {messages_collected} messages from {group_name}")
-            
-            # CONNECTION CHECK: Before final scroll
-            await self.ensure_connection("collect_chat_history_final_scroll")
-            
-            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(1)
-            
-            return messages_collected
-            
-        except ConnectionLostError as e:
-            print(f"  ⚠️ Connection lost during data collection: {e}")
-            print(f"  🔄 Data collection aborted. Will retry on next run.")
-            return 0
-        except Exception as e:
-            print(f"  ❌ Error collecting chat history: {e}")
-            import traceback
-            traceback.print_exc()
-            return 0
+    # async def collect_chat_history(self, group_name: str, group_id: int) -> int:
+    #     """
+    #     Collect chat history with EXHAUSTIVE connection checking.
+    #     Checks connection BEFORE, DURING, and AFTER every scroll.
+    #     If connection is lost, aborts and returns what was collected.
+    #     """
+    #     # ... (data collection code removed)
+    #     return 0
     
-    def _parse_whatsapp_time(self, time_text: str) -> datetime:
-        """Parse WhatsApp time format to datetime"""
-        try:
-            # WhatsApp web shows relative times like "11:30 AM" or "Yesterday" or "2:30 PM"
-            # Try to parse relative times
-            now = datetime.now()
-            
-            if "Yesterday" in time_text:
-                return now - timedelta(days=1)
-            elif "Today" in time_text:
-                return now
-            else:
-                # Try to parse time like "11:30 AM"
-                try:
-                    time_parts = time_text.strip().split()
-                    if len(time_parts) >= 2:
-                        time_str = time_parts[0]
-                        ampm = time_parts[1] if len(time_parts) > 1 else ""
-                        
-                        # Parse time
-                        hour, minute = map(int, time_str.split(':'))
-                        if ampm.lower() == 'pm' and hour < 12:
-                            hour += 12
-                        elif ampm.lower() == 'am' and hour == 12:
-                            hour = 0
-                        
-                        dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                        return dt
-                except:
-                    pass
-                
-                # If all else fails, return current time
-                return now
-                
-        except:
-            return datetime.now()
+    # def _parse_whatsapp_time(self, time_text: str) -> datetime:
+    #     """Parse WhatsApp time format to datetime"""
+    #     # ... (time parsing code removed)
+    #     return datetime.now()
     
-    def _extract_topics(self, text: str) -> List[str]:
-        """Extract potential trending topics from text"""
-        topics = []
-        
-        # Look for hashtags
-        hashtags = re.findall(r'#\w+', text)
-        topics.extend([h[1:] for h in hashtags])
-        
-        # Look for product mentions (capped with $ or specific terms)
-        product_terms = ['product', 'item', 'deal', 'offer', 'sale', 'new', 'limited', 'dm', 'order']
-        words = text.lower().split()
-        
-        for word in words:
-            if word in product_terms:
-                # Get surrounding words as context
-                idx = words.index(word)
-                if idx > 0 and idx < len(words) - 1:
-                    context = f"{words[idx-1]}_{words[idx]}_{words[idx+1]}"
-                    topics.append(context)
-        
-        # Look for keywords in specific categories
-        categories = {
-            'fashion': ['dress', 'shirt', 'pants', 'skirt', 'jacket', 'shoe', 'bag', 'fashion'],
-            'electronics': ['phone', 'laptop', 'computer', 'tv', 'screen', 'battery', 'charger'],
-            'food': ['food', 'meal', 'delivery', 'restaurant', 'order food'],
-            'services': ['service', 'repair', 'consult', 'booking', 'schedule']
-        }
-        
-        for category, keywords in categories.items():
-            if any(kw in text.lower() for kw in keywords):
-                topics.append(f"{category}_trend")
-        
-        return list(set(topics))[:5]  # Limit to 5 topics per message
+    # def _extract_topics(self, text: str) -> List[str]:
+    #     """Extract potential trending topics from text"""
+    #     # ... (topic extraction code removed)
+    #     return []
     
     # ============================================================
     # GROUP OPENING - WITH EXHAUSTIVE CONNECTION CHECKS
@@ -1413,11 +1097,11 @@ class GroupPoster:
             
             print(f"\n📤 Posting to: {group_name}")
             
-            # CONNECTION CHECK: Before database operation
-            await self.ensure_connection(f"post_to_group_db_prep_{group_name}")
+            # # CONNECTION CHECK: Before database operation
+            # await self.ensure_connection(f"post_to_group_db_prep_{group_name}")
             
-            # Get or create group in database
-            group_id = self.db.get_or_create_group(group_name)
+            # # Get or create group in database
+            # group_id = self.db.get_or_create_group(group_name)
             
             # CONNECTION CHECK: Before opening group
             await self.ensure_connection(f"post_to_group_open_{group_name}")
@@ -1616,46 +1300,46 @@ class GroupPoster:
                 message_sent = True
             
             # ============================================================
-            # DATA COLLECTION: ALWAYS COLLECT, even if message send failed
+            # DATA COLLECTION: COMMENTED OUT - MATCHES MAIN FILE
             # ============================================================
             
-            # CONNECTION CHECK: Before data collection
-            try:
-                await self.ensure_connection(f"post_to_group_data_collection_start_{group_name}")
-            except ConnectionLostError:
-                print(f"  ⚠️ Connection lost before data collection. Will try anyway...")
+            # # CONNECTION CHECK: Before data collection
+            # try:
+            #     await self.ensure_connection(f"post_to_group_data_collection_start_{group_name}")
+            # except ConnectionLostError:
+            #     print(f"  ⚠️ Connection lost before data collection. Will try anyway...")
             
-            print(f"\n  📊 Beginning data collection for: {group_name}")
+            # print(f"\n  📊 Beginning data collection for: {group_name}")
             
-            # Collect chat history (handles its own connection checks)
-            messages_collected = await self.collect_chat_history(group_name, group_id)
+            # # Collect chat history (handles its own connection checks)
+            # messages_collected = await self.collect_chat_history(group_name, group_id)
             
-            # CONNECTION CHECK: Before database save
-            try:
-                await self.ensure_connection(f"post_to_group_db_save_{group_name}")
-            except ConnectionLostError:
-                print(f"  ⚠️ Connection lost before saving product post. Will try anyway...")
+            # # CONNECTION CHECK: Before database save
+            # try:
+            #     await self.ensure_connection(f"post_to_group_db_save_{group_name}")
+            # except ConnectionLostError:
+            #     print(f"  ⚠️ Connection lost before saving product post. Will try anyway...")
             
-            # Save product post to database (always save)
-            if self.current_product:
-                product_id = self.db.save_product_post(
-                    product=self.current_product,
-                    group_id=group_id,
-                    message=message
-                )
-                print(f"    ✅ Product post saved to database (ID: {product_id})")
+            # # Save product post to database (always save)
+            # if self.current_product:
+            #     product_id = self.db.save_product_post(
+            #         product=self.current_product,
+            #         group_id=group_id,
+            #         message=message
+            #     )
+            #     print(f"    ✅ Product post saved to database (ID: {product_id})")
             
-            print(f"  ✅ Data collection complete for: {group_name}")
-            print(f"    📊 Total messages collected: {messages_collected}")
+            # print(f"  ✅ Data collection complete for: {group_name}")
+            # print(f"    📊 Total messages collected: {messages_collected}")
             
             # Record success or failure
             if message_sent:
                 self.failed_tracker.record_success(group_name)
-                print(f"  ✅ Posted and collected data from: {group_name}")
+                print(f"  ✅ Posted to: {group_name}")
                 return True
             else:
                 self.failed_tracker.record_failure(group_name)
-                print(f"  ⚠️ Message may not have sent, but data collected")
+                print(f"  ⚠️ Message may not have sent to: {group_name}")
                 return False
             
         except ConnectionLostError as e:
@@ -1667,18 +1351,18 @@ class GroupPoster:
             print(f"  ❌ Error posting: {e}")
             self.failed_tracker.record_failure(group_name)
             
-            # Try to save any collected data even on error
-            try:
-                if self.current_product and 'group_id' in locals():
-                    self.db.save_product_post(
-                        product=self.current_product,
-                        group_id=group_id,
-                        message=message,
-                        status="error",
-                        error_message=str(e)
-                    )
-            except:
-                pass
+            # Try to save any collected data even on error (commented out)
+            # try:
+            #     if self.current_product and 'group_id' in locals():
+            #         self.db.save_product_post(
+            #             product=self.current_product,
+            #             group_id=group_id,
+            #             message=message,
+            #             status="error",
+            #             error_message=str(e)
+            #         )
+            # except:
+            #     pass
             
             return False
     
@@ -1779,7 +1463,7 @@ class GroupPoster:
         
         successful_products = 0
         failed_products = 0
-        total_messages_collected = 0
+        # total_messages_collected = 0
         
         for i, product in enumerate(selected, 1):
             try:
@@ -1831,7 +1515,7 @@ class GroupPoster:
                 
                 if success:
                     successful_groups.append(group)
-                    total_messages_collected += 1
+                    # total_messages_collected += 1
                 else:
                     failed_groups.append(group)
                 
@@ -1896,10 +1580,10 @@ class GroupPoster:
         
         # Final summary
         stats = self.product_loader.get_stats()
-        db_stats = self.db.get_db_stats()
+        # db_stats = self.db.get_db_stats()
         
         print("\n" + "=" * 60)
-        print("📊 POSTING & DATA COLLECTION SUMMARY")
+        print("📊 POSTING SUMMARY")
         print("=" * 60)
         print(f"✅ Successful products: {successful_products}")
         print(f"❌ Failed products: {failed_products}")
@@ -1907,14 +1591,14 @@ class GroupPoster:
         print(f"📦 Pending remaining: {stats['pending']}")
         print(f"⏳ Link preview max delay: {LINK_PREVIEW_DELAY}s")
         print("")
-        print("📊 DATABASE STATISTICS")
-        print("-" * 40)
-        print(f"Total groups in DB: {db_stats['total_groups']}")
-        print(f"Total messages in DB: {db_stats['total_messages']}")
-        print(f"Total products posted: {db_stats['total_products_posted']}")
-        print(f"Unique words tracked: {db_stats['unique_words']}")
-        print(f"Trending topics tracked: {db_stats['trending_topics']}")
-        print("")
+        # print("📊 DATABASE STATISTICS")
+        # print("-" * 40)
+        # print(f"Total groups in DB: {db_stats['total_groups']}")
+        # print(f"Total messages in DB: {db_stats['total_messages']}")
+        # print(f"Total products posted: {db_stats['total_products_posted']}")
+        # print(f"Unique words tracked: {db_stats['unique_words']}")
+        # print(f"Trending topics tracked: {db_stats['trending_topics']}")
+        # print("")
         print("📊 CONNECTION MONITORING STATISTICS")
         print("-" * 40)
         print(f"Total connection checks: {self.connection_stats['checks_performed']}")
@@ -1932,24 +1616,24 @@ class GroupPoster:
             print("✅ Products reset! Ready for next round.")
         
         print(f"\n✅ Posting complete! {successful_products} product(s) posted.")
-        print(f"📊 Data collected and stored in database: {DB_FILE}")
+        # print(f"📊 Data collected and stored in database: {DB_FILE}")
     
     # ============================================================
-    # GENERATE ANALYTICS REPORT
+    # GENERATE ANALYTICS REPORT (COMMENTED OUT)
     # ============================================================
     
-    def generate_report(self):
-        """Generate and save a comprehensive analytics report"""
-        report = self.db.generate_report()
-        print(report)
+    # def generate_report(self):
+    #     """Generate and save a comprehensive analytics report"""
+    #     report = self.db.generate_report()
+    #     print(report)
         
-        # Save report to file
-        report_file = DATA_DIR / f"analytics_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-        with open(report_file, 'w', encoding='utf-8') as f:
-            f.write(report)
-        print(f"\n📄 Report saved to: {report_file}")
+    #     # Save report to file
+    #     report_file = DATA_DIR / f"analytics_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    #     with open(report_file, 'w', encoding='utf-8') as f:
+    #         f.write(report)
+    #     print(f"\n📄 Report saved to: {report_file}")
         
-        return report
+    #     return report
     
     # ============================================================
     # CONNECTION HEALTH CHECK - BACKGROUND TASK
@@ -2043,8 +1727,8 @@ async def main():
             # Post products with data collection
             await poster.post_random_products(count=1)
             
-            # Generate analytics report
-            poster.generate_report()
+            # Generate analytics report (commented out)
+            # poster.generate_report()
             
         except KeyboardInterrupt:
             print("\n\n⏹️ Stopped by user")
@@ -2057,11 +1741,11 @@ async def main():
             # Stop the poster
             await poster.stop()
             
-            # Close database connection
-            poster.db.close()
+            # Close database connection (commented out)
+            # poster.db.close()
             
-            print("\n📊 Data collection complete!")
-            print(f"📁 Database stored at: {DB_FILE}")
+            print("\n📊 Posting complete!")
+            # print(f"📁 Database stored at: {DB_FILE}")
             print(f"📊 Connection checks performed: {poster.connection_stats['checks_performed']}")
             print(f"   Disconnections detected: {poster.connection_stats['disconnections_detected']}")
             print(f"   Reconnections succeeded: {poster.connection_stats['reconnections_succeeded']}")
