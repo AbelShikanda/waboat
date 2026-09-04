@@ -687,7 +687,7 @@ class LoginManager:
                     element = await self.page.query_selector(selector)
                     if element and await element.is_visible():
                         print("\n⚠️ 'We encountered a problem' popup detected!")
-                        print("   🔄 Clicking Reload button...")
+                        print("   🔄 Trying to reload...")
                         
                         # Try to find and click Reload button
                         reload_clicked = False
@@ -723,10 +723,27 @@ class LoginManager:
                                 except:
                                     continue
                         
+                        # ============================================================
+                        # FALLBACK: If no Reload button found, REFRESH THE BROWSER
+                        # ============================================================
                         if not reload_clicked:
-                            print("   ⚠️ Could not find Reload button, pressing Escape...")
-                            await self.page.keyboard.press('Escape')
-                            handled = True
+                            print("   ⚠️ Could not find Reload button, refreshing browser page...")
+                            try:
+                                await self.page.reload()
+                                print("   ✅ Browser page refreshed")
+                                handled = True
+                                self._problem_popup_handled = True
+                                await asyncio.sleep(5)  # Wait for page to reload
+                            except Exception as e:
+                                print(f"   ⚠️ Could not refresh page: {e}")
+                                # Last resort: press Escape to dismiss
+                                print("   ⏳ Pressing Escape as last resort...")
+                                await self.page.keyboard.press('Escape')
+                                handled = True
+                        
+                        # After reload or refresh, wait for WhatsApp to stabilize
+                        print("   ⏳ Waiting for WhatsApp to stabilize...")
+                        await asyncio.sleep(3)
                         
                         return handled
                 except:
